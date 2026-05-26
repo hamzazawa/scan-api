@@ -10,7 +10,6 @@
     <style>
         body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; color: #0f172a; }
         .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-        /* لتنسيق شريط التمرير في النافذة المنبثقة */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -28,7 +27,7 @@
             
             <input type="password" id="sellerKeyInput" placeholder="المفتاح السري..." class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-3.5 mb-4 text-center font-mono tracking-widest outline-none transition">
             
-            <button onclick="login()" id="loginBtn" class="w-full text-white bg-blue-600 hover:bg-blue-700 font-black rounded-xl text-sm px-5 py-3.5 text-center shadow-lg transition">
+            <button onclick="login(false)" id="loginBtn" class="w-full text-white bg-blue-600 hover:bg-blue-700 font-black rounded-xl text-sm px-5 py-3.5 text-center shadow-lg transition">
                 تسجيل الدخول <i class="fa-solid fa-arrow-left-to-bracket ml-1"></i>
             </button>
             <p id="loginError" class="text-red-500 text-xs font-bold mt-3 hidden"></p>
@@ -141,8 +140,14 @@
         const API_BASE_URL = 'https://serverfirebase.fly.dev/api';
         let currentSeller = '';
 
-        // تشغيل التحقق التلقائي عند فتح الصفحة
         window.onload = () => {
+            // دعم الضغط على Enter من لوحة المفاتيح
+            document.getElementById('sellerKeyInput').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    login(false);
+                }
+            });
+
             const savedKey = localStorage.getItem('epec_seller_key');
             if (savedKey) {
                 document.getElementById('sellerKeyInput').value = savedKey;
@@ -151,19 +156,243 @@
         };
 
         // 1. دالة تسجيل الدخول
-        async function login(isAuto = false) {
+        async function login(isAuto) {
             const key = document.getElementById('sellerKeyInput').value.trim();
             const btn = document.getElementById('loginBtn');
             const errorText = document.getElementById('loginError');
 
-            if (!key) return;
+            // إذا الخانة فارغة، نظهر خطأ للمستخدم بدلاً من التوقف الصامت
+            if (!key) {
+                errorText.innerText = "المرجو إدخال المفتاح السري أولاً!";
+                errorText.classList.remove('hidden');
+                return;
+            }
 
-            if (!isAuto) {
+            if (isAuto !== true) {
                 btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التحقق...';
+                btn.disabled = true;
             }
             errorText.classList.add('hidden');
 
             try {
                 const response = await fetch(`${API_BASE_URL}/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sellerKey: key })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentSeller = result.sellerName;
+                    localStorage.setItem('epec_seller_key', key);
+                    
+                    document.getElementById('welcomeName').innerText = `مرحباً، ${currentSeller}`;
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('dashboardScreen').classList.remove('hidden');
+                    document.getElementById('dashboardScreen').classList.add('flex');
+                    
+                    fetchMyAccounts();
+                } else {
+                    errorText.innerText = result.message;
+                    errorText.classList.remove('hidden');
+                    localStorage.removeItem('epec_seller_key'); 
+                }
+            } catch (error) {
+                errorText.innerText = "تعذر الاتصال بالسيرفر. (أعد المحاولة)";
+                errorText.classList.remove('hidden');
+            } finally {
+                if (isAuto !== true) {
+                    btn.innerHTML = 'تسجيل الدخول <i class="fa-solid fa-arrow-left-to-bracket ml-1"></i>';
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        // 2. دالة جلب حسابات البائع
+        async function fetchMyAccounts() {
+            const grid = document.getElementById('sellerAccountsGrid');
+            const loader = document.getElementById('loadingDash');
+            
+            grid.innerHTML = '';
+            loader.classList.remove('hidden');
+            grid.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/my-accounts/${currentSeller}`);
+                const result = await response.json();
+
+                loader.classList.add('hidden');
+                grid.classList.remove('hidden');
+
+                if (result.success && result.data && Object.keys(result.data).length > 0) {
+                    let accountsArray = Object.keys(result.data).map(key => {
+                        return { id: key, ...result.data[key] };
+                    }).reverse();
+
+                    accountsArray.forEach(acc => {
+                        let priceWeb = acc.price_web || 0;
+                        let bankPrice = acc.bank_price || 0;
+
+                        grid.innerHTML += `
+                        <div class="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm flex flex-col relative">
+                            <div class="relative h-36 w-full bg-gray-100 group">
+                                <img src="${acc.img}" class="w-full h-full object-cover">
+                                <button onclick="downloadImage('${acc.img}', '${acc.id}')" class="absolute top-2 right-2 bg-black/60 hover:bg-black text-white w-8 h-8 rounded-full flex justify-center items-center backdrop-blur-sm transition">
+                                    <i class="fa-solid fa-download text-xs"></i>
+                                </button>
+                                <div class="absolute bottom-2 right-2 bg-blue-600 text-white text-[9px] font-black px-2 py-1 rounded">متوفر</div>
+                            </div>
+                            <div class="p-3 flex-grow flex flex-col">
+                                <h3 class="font-bold text-xs text-gray-800 mb-2 line-clamp-1" title="${acc.title}">${acc.title}</h3>
+                                <div class="flex gap-2 mb-3">
+                                    <div class="flex-1 bg-gray-50 border border-gray-100 p-1.5 rounded-lg text-center">
+                                        <p class="text-[9px] text-gray-400 font-bold mb-0.5">ثمن الشراء</p>
+                                        <p class="text-xs font-black text-gray-600">${bankPrice} MAD</p>
+                                    </div>
+                                    <div class="flex-1 bg-blue-50 border border-blue-100 p-1.5 rounded-lg text-center">
+                                        <p class="text-[9px] text-blue-500 font-bold mb-0.5">ثمن البيع</p>
+                                        <p class="text-xs font-black text-blue-700">${priceWeb} MAD</p>
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5 mb-3">
+                                    <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded p-1.5">
+                                        <i class="fa-solid fa-envelope text-gray-400 text-[10px] ml-1"></i>
+                                        <span class="text-[10px] font-bold text-gray-700 flex-grow truncate dir-ltr text-left">${acc.email || 'لا يوجد'}</span>
+                                        <button onclick="copyText('${acc.email}')" class="text-gray-400 hover:text-blue-500 transition px-1"><i class="fa-regular fa-copy text-[11px]"></i></button>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded p-1.5">
+                                        <i class="fa-solid fa-key text-gray-400 text-[10px] ml-1"></i>
+                                        <span class="text-[10px] font-bold text-gray-700 flex-grow truncate dir-ltr text-left">${acc.password || 'لا يوجد'}</span>
+                                        <button onclick="copyText('${acc.password}')" class="text-gray-400 hover:text-blue-500 transition px-1"><i class="fa-regular fa-copy text-[11px]"></i></button>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-4 gap-1.5 mt-auto pt-2 border-t border-gray-100">
+                                    <button onclick="actionAlert('حذف')" class="bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded text-[10px] font-bold transition flex flex-col items-center gap-0.5">
+                                        <i class="fa-solid fa-trash-can"></i> حذف
+                                    </button>
+                                    <button onclick="actionAlert('تعديل')" class="bg-orange-50 hover:bg-orange-100 text-orange-600 py-1.5 rounded text-[10px] font-bold transition flex flex-col items-center gap-0.5">
+                                        <i class="fa-solid fa-pen"></i> تعديل
+                                    </button>
+                                    <button onclick="actionAlert('مؤقت')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 rounded text-[10px] font-bold transition flex flex-col items-center gap-0.5">
+                                        <i class="fa-solid fa-clock"></i> مؤقت
+                                    </button>
+                                    <button onclick="actionAlert('تم البيع')" class="bg-green-50 hover:bg-green-100 text-green-600 py-1.5 rounded text-[10px] font-bold transition flex flex-col items-center gap-0.5">
+                                        <i class="fa-solid fa-check-double"></i> مباع
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                } else {
+                    grid.innerHTML = `<div class="col-span-full text-center py-8 text-gray-400 font-bold text-sm">لا توجد لديك حسابات حالياً.</div>`;
+                }
+            } catch (error) {
+                grid.innerHTML = `<div class="col-span-full text-center py-8 text-red-500 font-bold text-sm">حدث خطأ أثناء جلب الحسابات.</div>`;
+            }
+        }
+
+        // 3. إرسال حساب جديد للسيرفر
+        async function submitNewAccount(event) {
+            event.preventDefault(); 
+            
+            const btn = document.getElementById('submitAccBtn');
+            const errorText = document.getElementById('submitError');
+            const imageFile = document.getElementById('accImage').files[0];
+            
+            if (!imageFile) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري الرفع للـ Cloudflare...';
+            errorText.classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('sellerName', currentSeller);
+            formData.append('image', imageFile);
+            formData.append('title', document.getElementById('accTitle').value);
+            formData.append('bankPrice', document.getElementById('accBankPrice').value);
+            formData.append('webPrice', document.getElementById('accWebPrice').value);
+            formData.append('email', document.getElementById('accEmail').value);
+            formData.append('password', document.getElementById('accPassword').value);
+            formData.append('isGg', document.getElementById('accGg').checked);
+            formData.append('isIos', document.getElementById('accIos').checked);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/add-account`, {
+                    method: 'POST',
+                    body: formData 
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    closeAddModal();
+                    document.getElementById('addForm').reset(); 
+                    showToast("تمت إضافة الحساب بنجاح!");
+                    fetchMyAccounts(); 
+                } else {
+                    errorText.innerText = result.message || "حدث خطأ أثناء الرفع";
+                    errorText.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorText.innerText = "تعذر الاتصال بالسيرفر. حاول مرة أخرى.";
+                errorText.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'نشر الحساب <i class="fa-solid fa-cloud-arrow-up ml-2"></i>';
+            }
+        }
+
+        function openAddModal() {
+            document.getElementById('addAccountModal').classList.remove('hidden');
+        }
+
+        function closeAddModal() {
+            document.getElementById('addAccountModal').classList.add('hidden');
+            document.getElementById('submitError').classList.add('hidden');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = message;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => toast.classList.add('opacity-0'), 3000);
+        }
+
+        function copyText(text) {
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => showToast("تم النسخ بنجاح"));
+        }
+
+        async function downloadImage(imageSrc, id) {
+            try {
+                const response = await fetch(imageSrc);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `Account_${id}.webp`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                alert("حدث خطأ أثناء تنزيل الصورة");
+            }
+        }
+
+        function actionAlert(action) {
+            alert(`سيتم برمجة زر (${action}) في الخطوة القادمة، ليتصل بالسيرفر مباشرة!`);
+        }
+
+        function logout() {
+            localStorage.removeItem('epec_seller_key'); 
+            currentSeller = '';
+            document.getElementById('sellerKeyInput').value = '';
+            document.getElementById('dashboardScreen').classList.add('hidden');
+            document.getElementById('dashboardScreen').classList.remove('flex');
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
