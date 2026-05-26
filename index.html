@@ -10,9 +10,6 @@
     <style>
         body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; color: #0f172a; }
         .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col relative">
@@ -23,7 +20,6 @@
                 <i class="fa-solid fa-user-shield"></i>
             </div>
             <h2 class="text-2xl font-black text-gray-800 mb-2">بوابة البائعين</h2>
-            <p class="text-xs font-bold text-gray-500 mb-6">أدخل المفتاح السري الخاص بك للوصول لحساباتك</p>
             
             <input type="password" id="sellerKeyInput" placeholder="المفتاح السري..." class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-3.5 mb-4 text-center font-mono tracking-widest outline-none transition">
             
@@ -43,15 +39,14 @@
                     </div>
                     <div>
                         <h1 class="text-sm font-black text-gray-800" id="welcomeName">مرحباً...</h1>
-                        <p class="text-[10px] font-bold text-gray-500">لوحة الإدارة</p>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="openAddModal()" class="bg-green-100 hover:bg-green-200 text-green-700 border border-green-300 px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1">
+                    <button onclick="openAddEditView()" class="bg-green-100 hover:bg-green-200 text-green-700 border border-green-300 px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1">
                         <i class="fa-solid fa-plus"></i> إضافة
                     </button>
                     <button onclick="logout()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
-                        خروج <i class="fa-solid fa-power-off"></i>
+                        خروج
                     </button>
                 </div>
             </div>
@@ -59,334 +54,325 @@
 
         <main class="container mx-auto px-4 py-6 flex-grow">
             <h2 class="text-lg font-black text-gray-800 mb-4 border-r-4 border-blue-600 pr-2">حساباتي المعروضة</h2>
-            
-            <div id="loadingDash" class="flex justify-center py-10">
-                <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500"></i>
-            </div>
-
-            <div id="sellerAccountsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 hidden">
-            </div>
+            <div id="loadingDash" class="flex justify-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500"></i></div>
+            <div id="sellerAccountsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 hidden"></div>
         </main>
     </div>
 
-    <div id="addAccountModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                <h3 class="font-black text-gray-800 text-lg">إضافة حساب جديد</h3>
-                <button onclick="closeAddModal()" class="text-gray-400 hover:text-red-500 transition w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 shadow-sm">
-                    <i class="fa-solid fa-xmark"></i>
+    <div id="addEditScreen" class="hidden flex-col flex-grow bg-white z-50 absolute inset-0 min-h-screen">
+        <header class="bg-white border-b border-gray-200 py-4 sticky top-0 z-40 shadow-sm">
+            <div class="container mx-auto px-4 flex justify-between items-center">
+                <h1 class="text-lg font-black text-gray-800" id="formTitle">إضافة حساب جديد</h1>
+                <button onclick="closeAddEditView()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                    إلغاء <i class="fa-solid fa-arrow-left"></i>
                 </button>
             </div>
-            
-            <div class="p-5 overflow-y-auto flex-grow">
-                <form id="addForm" onsubmit="submitNewAccount(event)">
-                    <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">صورة الحساب <span class="text-red-500">*</span></label>
-                        <input type="file" id="accImage" accept="image/*" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-200 rounded-xl p-1 bg-white">
-                    </div>
+        </header>
 
-                    <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">عنوان الحساب / الوصف <span class="text-red-500">*</span></label>
-                        <input type="text" id="accTitle" required placeholder="مثال: حساب بيس قوي جدا..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
+        <main class="container mx-auto px-4 py-6 max-w-lg flex-grow">
+            <form id="accForm" onsubmit="saveAccount(event)">
+                <input type="hidden" id="editAccountId">
+                <input type="hidden" id="uploadedImageUrl">
 
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">ثمن الشراء (البنك) <span class="text-red-500">*</span></label>
-                            <input type="number" id="accBankPrice" required placeholder="بالدرهم" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-left" dir="ltr">
+                <div class="mb-5 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl p-4 text-center relative overflow-hidden">
+                    <label class="block text-sm font-bold text-gray-700 cursor-pointer w-full h-full">
+                        <span id="uploadPrompt"><i class="fa-solid fa-cloud-arrow-up text-3xl text-blue-500 mb-2 block"></i> اضغط لاختيار صورة الحساب</span>
+                        <input type="file" id="accImageInput" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
+                    </label>
+                    
+                    <div id="imagePreviewContainer" class="hidden mt-3 relative">
+                        <img id="imagePreview" class="w-full max-h-48 object-contain rounded-xl shadow-sm bg-black/5">
+                        <div id="uploadOverlay" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center rounded-xl">
+                            <i class="fa-solid fa-spinner fa-spin text-white text-3xl mb-2"></i>
+                            <span class="text-white text-xs font-bold">جاري الرفع...</span>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">ثمن البيع (الويب) <span class="text-red-500">*</span></label>
-                            <input type="number" id="accWebPrice" required placeholder="بالدرهم" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-left" dir="ltr">
-                        </div>
-                    </div>
-
-                    <div class="space-y-3 mb-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 mb-1">البريد الإلكتروني (اختياري)</label>
-                            <input type="email" id="accEmail" placeholder="example@email.com" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-left" dir="ltr">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 mb-1">كلمة السر (اختياري)</label>
-                            <input type="text" id="accPassword" placeholder="password123" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-left" dir="ltr">
+                        <div id="uploadSuccess" class="absolute top-2 right-2 bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center hidden">
+                            <i class="fa-solid fa-check"></i>
                         </div>
                     </div>
+                </div>
 
-                    <div class="flex gap-4 mb-6">
-                        <label class="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="accGg" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
-                            <span class="text-xs font-bold text-gray-700">مربوط بـ Google</span>
-                        </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="accIos" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
-                            <span class="text-xs font-bold text-gray-700">iOS متوفر</span>
-                        </label>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">عنوان الحساب / الوصف <span class="text-red-500">*</span></label>
+                    <input type="text" id="accTitle" required class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">ثمن البيع (إجباري) <span class="text-red-500">*</span></label>
+                        <input type="number" id="accWebPrice" required placeholder="درهم" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none bg-blue-50/50">
                     </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">ثمن الشراء (اختياري)</label>
+                        <input type="number" id="accBankPrice" placeholder="درهم" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none bg-gray-50">
+                    </div>
+                </div>
 
-                    <button type="submit" id="submitAccBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl transition shadow-lg text-sm flex justify-center items-center">
-                        نشر الحساب <i class="fa-solid fa-cloud-arrow-up ml-2"></i>
-                    </button>
-                    <p id="submitError" class="text-red-500 text-xs font-bold mt-2 text-center hidden"></p>
-                </form>
-            </div>
-        </div>
+                <div class="space-y-3 mb-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 mb-1">البريد الإلكتروني (اختياري)</label>
+                        <input type="email" id="accEmail" dir="ltr" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 mb-1">كلمة السر (اختياري)</label>
+                        <input type="text" id="accPassword" dir="ltr" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs outline-none">
+                    </div>
+                </div>
+
+                <div class="flex gap-4 mb-6">
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="accGg" class="w-4 h-4 text-blue-600 bg-gray-100 rounded focus:ring-blue-500">
+                        <span class="text-xs font-bold text-gray-700">مربوط بـ Google</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="accGameCenter" class="w-4 h-4 text-blue-600 bg-gray-100 rounded focus:ring-blue-500">
+                        <span class="text-xs font-bold text-gray-700">مربوط بـ Game Center</span>
+                    </label>
+                </div>
+
+                <button type="submit" id="submitAccBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-xl transition shadow-lg text-sm flex justify-center items-center">
+                    حفظ الحساب <i class="fa-solid fa-floppy-disk ml-2"></i>
+                </button>
+            </form>
+        </main>
     </div>
 
-    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl opacity-0 transition-opacity duration-300 z-50 pointer-events-none whitespace-nowrap">
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl opacity-0 transition-opacity duration-300 z-50 pointer-events-none whitespace-nowrap">
         <span id="toastMsg">تمت العملية بنجاح</span> <i class="fa-solid fa-check text-green-400 ml-1"></i>
     </div>
 
     <script>
         const API_BASE_URL = 'https://serverfirebase.fly.dev/api';
         let currentSeller = '';
+        let allMyAccounts = {};
 
         window.onload = () => {
-            // دعم الضغط على Enter من لوحة المفاتيح
-            document.getElementById('sellerKeyInput').addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    login(false);
-                }
-            });
-
+            document.getElementById('sellerKeyInput').addEventListener('keypress', e => { if(e.key === 'Enter') login(false); });
             const savedKey = localStorage.getItem('epec_seller_key');
-            if (savedKey) {
-                document.getElementById('sellerKeyInput').value = savedKey;
-                login(true);
-            }
+            if (savedKey) { document.getElementById('sellerKeyInput').value = savedKey; login(true); }
         };
 
-        // 1. دالة تسجيل الدخول
         async function login(isAuto) {
             const key = document.getElementById('sellerKeyInput').value.trim();
             const btn = document.getElementById('loginBtn');
             const errorText = document.getElementById('loginError');
 
-            // إذا الخانة فارغة، نظهر خطأ للمستخدم بدلاً من التوقف الصامت
-            if (!key) {
-                errorText.innerText = "المرجو إدخال المفتاح السري أولاً!";
-                errorText.classList.remove('hidden');
-                return;
-            }
-
-            if (isAuto !== true) {
-                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التحقق...';
-                btn.disabled = true;
-            }
+            if (!key) { errorText.innerText = "أدخل المفتاح السري!"; errorText.classList.remove('hidden'); return; }
+            if (!isAuto) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; btn.disabled = true; }
             errorText.classList.add('hidden');
 
             try {
-                const response = await fetch(`${API_BASE_URL}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sellerKey: key })
-                });
-
-                const result = await response.json();
-
+                const res = await fetch(`${API_BASE_URL}/login`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sellerKey: key}) });
+                const result = await res.json();
                 if (result.success) {
                     currentSeller = result.sellerName;
                     localStorage.setItem('epec_seller_key', key);
-                    
                     document.getElementById('welcomeName').innerText = `مرحباً، ${currentSeller}`;
                     document.getElementById('loginScreen').classList.add('hidden');
                     document.getElementById('dashboardScreen').classList.remove('hidden');
                     document.getElementById('dashboardScreen').classList.add('flex');
-                    
                     fetchMyAccounts();
                 } else {
-                    errorText.innerText = result.message;
-                    errorText.classList.remove('hidden');
-                    localStorage.removeItem('epec_seller_key'); 
+                    errorText.innerText = "المفتاح غير صحيح"; errorText.classList.remove('hidden');
+                    localStorage.removeItem('epec_seller_key');
                 }
-            } catch (error) {
-                errorText.innerText = "تعذر الاتصال بالسيرفر. (أعد المحاولة)";
-                errorText.classList.remove('hidden');
-            } finally {
-                if (isAuto !== true) {
-                    btn.innerHTML = 'تسجيل الدخول <i class="fa-solid fa-arrow-left-to-bracket ml-1"></i>';
-                    btn.disabled = false;
-                }
-            }
+            } catch (e) { errorText.innerText = "تعذر الاتصال بالسيرفر"; errorText.classList.remove('hidden'); }
+            finally { if (!isAuto) { btn.innerHTML = 'دخول'; btn.disabled = false; } }
         }
 
-        // 2. دالة جلب حسابات البائع
         async function fetchMyAccounts() {
             const grid = document.getElementById('sellerAccountsGrid');
-            const loader = document.getElementById('loadingDash');
-            
             grid.innerHTML = '';
-            loader.classList.remove('hidden');
+            document.getElementById('loadingDash').classList.remove('hidden');
             grid.classList.add('hidden');
 
             try {
-                const response = await fetch(`${API_BASE_URL}/my-accounts/${currentSeller}`);
-                const result = await response.json();
-
-                loader.classList.add('hidden');
+                const res = await fetch(`${API_BASE_URL}/my-accounts/${currentSeller}`);
+                const result = await res.json();
+                document.getElementById('loadingDash').classList.add('hidden');
                 grid.classList.remove('hidden');
 
-                if (result.success && result.data && Object.keys(result.data).length > 0) {
-                    let accountsArray = Object.keys(result.data).map(key => {
-                        return { id: key, ...result.data[key] };
-                    }).reverse();
+                if (result.success && result.data) {
+                    allMyAccounts = result.data;
+                    let accountsArray = Object.keys(result.data)
+                        .map(key => ({ id: key, ...result.data[key] }))
+                        .filter(acc => acc.status !== 'delete') // إخفاء المحذوفة فعلياً من الواجهة
+                        .reverse();
+
+                    if(accountsArray.length === 0) { grid.innerHTML = `<div class="col-span-full text-center py-8 text-gray-400 font-bold">لا توجد حسابات حالياً.</div>`; return;}
 
                     accountsArray.forEach(acc => {
-                        let priceWeb = acc.price_web || 0;
-                        let bankPrice = acc.bank_price || 0;
+                        let statusBadge = '';
+                        if(acc.status === 'sold') statusBadge = '<div class="absolute bottom-2 right-2 bg-red-600 text-white text-[9px] font-black px-2 py-1 rounded">مباع</div>';
+                        else if(acc.status === 'att') statusBadge = '<div class="absolute bottom-2 right-2 bg-yellow-500 text-white text-[9px] font-black px-2 py-1 rounded">مؤقت</div>';
+                        else statusBadge = '<div class="absolute bottom-2 right-2 bg-blue-600 text-white text-[9px] font-black px-2 py-1 rounded">متوفر</div>';
 
                         grid.innerHTML += `
-                        <div class="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm flex flex-col relative">
-                            <div class="relative h-36 w-full bg-gray-100 group">
-                                <img src="${acc.img}" class="w-full h-full object-cover">
-                                <button onclick="downloadImage('${acc.img}', '${acc.id}')" class="absolute top-2 right-2 bg-black/60 hover:bg-black text-white w-8 h-8 rounded-full flex justify-center items-center backdrop-blur-sm transition">
+                        <div class="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm flex flex-col">
+                            <div class="relative w-full h-48 bg-gray-100 flex justify-center items-center overflow-hidden group">
+                                <img src="${acc.img}" class="w-full h-full object-contain">
+                                <button onclick="window.open('${acc.img}', '_blank')" class="absolute top-2 right-2 bg-black/60 hover:bg-black text-white w-8 h-8 rounded-full flex justify-center items-center backdrop-blur-sm">
                                     <i class="fa-solid fa-download text-xs"></i>
                                 </button>
-                                <div class="absolute bottom-2 right-2 bg-blue-600 text-white text-[9px] font-black px-2 py-1 rounded">متوفر</div>
+                                ${statusBadge}
                             </div>
                             <div class="p-3 flex-grow flex flex-col">
-                                <h3 class="font-bold text-xs text-gray-800 mb-2 line-clamp-1" title="${acc.title}">${acc.title}</h3>
+                                <h3 class="font-bold text-xs text-gray-800 mb-2 line-clamp-1">${acc.title}</h3>
                                 <div class="flex gap-2 mb-3">
                                     <div class="flex-1 bg-gray-50 border border-gray-100 p-1.5 rounded-lg text-center">
-                                        <p class="text-[9px] text-gray-400 font-bold mb-0.5">ثمن الشراء</p>
-                                        <p class="text-xs font-black text-gray-600">${bankPrice} MAD</p>
+                                        <p class="text-[9px] text-gray-400 font-bold">الشراء</p>
+                                        <p class="text-xs font-black text-gray-600">${acc.bank_price || 0}</p>
                                     </div>
                                     <div class="flex-1 bg-blue-50 border border-blue-100 p-1.5 rounded-lg text-center">
-                                        <p class="text-[9px] text-blue-500 font-bold mb-0.5">ثمن البيع</p>
-                                        <p class="text-xs font-black text-blue-700">${priceWeb} MAD</p>
-                                    </div>
-                                </div>
-                                <div class="space-y-1.5 mb-3">
-                                    <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded p-1.5">
-                                        <i class="fa-solid fa-envelope text-gray-400 text-[10px] ml-1"></i>
-                                        <span class="text-[10px] font-bold text-gray-700 flex-grow truncate dir-ltr text-left">${acc.email || 'لا يوجد'}</span>
-                                        <button onclick="copyText('${acc.email}')" class="text-gray-400 hover:text-blue-500 transition px-1"><i class="fa-regular fa-copy text-[11px]"></i></button>
-                                    </div>
-                                    <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded p-1.5">
-                                        <i class="fa-solid fa-key text-gray-400 text-[10px] ml-1"></i>
-                                        <span class="text-[10px] font-bold text-gray-700 flex-grow truncate dir-ltr text-left">${acc.password || 'لا يوجد'}</span>
-                                        <button onclick="copyText('${acc.password}')" class="text-gray-400 hover:text-blue-500 transition px-1"><i class="fa-regular fa-copy text-[11px]"></i></button>
+                                        <p class="text-[9px] text-blue-500 font-bold">البيع</p>
+                                        <p class="text-xs font-black text-blue-700">${acc.price_web}</p>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-4 gap-1.5 mt-auto pt-2 border-t border-gray-100">
-                                    <button onclick="actionAlert('حذف')" class="bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded text-[10px] font-bold transition flex flex-col items-center gap-0.5">
-                                        <i class="fa-solid fa-trash-can"></i> حذف
-                                    </button>
-                                    <button onclick="actionAlert('تعديل')" class="bg-orange-50 hover:bg-orange-100 text-orange-600 py-1.5 rounded text-[10px] font-bold transition flex flex-col items-center gap-0.5">
-                                        <i class="fa-solid fa-pen"></i> تعديل
-                                    </button>
-                                    <button onclick="actionAlert('مؤقت')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 rounded text-[10px] font-bold transition flex flex-col items-center gap-0.5">
-                                        <i class="fa-solid fa-clock"></i> مؤقت
-                                    </button>
-                                    <button onclick="actionAlert('تم البيع')" class="bg-green-50 hover:bg-green-100 text-green-600 py-1.5 rounded text-[10px] font-bold transition flex flex-col items-center gap-0.5">
-                                        <i class="fa-solid fa-check-double"></i> مباع
-                                    </button>
+                                    <button onclick="changeStatus('${acc.id}', 'delete')" class="bg-red-50 text-red-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-trash-can block mb-1"></i>حذف</button>
+                                    <button onclick="editAccount('${acc.id}')" class="bg-orange-50 text-orange-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-pen block mb-1"></i>تعديل</button>
+                                    <button onclick="changeStatus('${acc.id}', 'att')" class="bg-yellow-50 text-yellow-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-clock block mb-1"></i>مؤقت</button>
+                                    <button onclick="changeStatus('${acc.id}', 'sold')" class="bg-green-50 text-green-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-check block mb-1"></i>مباع</button>
                                 </div>
                             </div>
                         </div>`;
                     });
-                } else {
-                    grid.innerHTML = `<div class="col-span-full text-center py-8 text-gray-400 font-bold text-sm">لا توجد لديك حسابات حالياً.</div>`;
                 }
-            } catch (error) {
-                grid.innerHTML = `<div class="col-span-full text-center py-8 text-red-500 font-bold text-sm">حدث خطأ أثناء جلب الحسابات.</div>`;
-            }
+            } catch (e) { grid.innerHTML = `<div class="col-span-full text-center text-red-500 text-sm">خطأ في الجلب</div>`; }
         }
 
-        // 3. إرسال حساب جديد للسيرفر
-        async function submitNewAccount(event) {
-            event.preventDefault(); 
-            
-            const btn = document.getElementById('submitAccBtn');
-            const errorText = document.getElementById('submitError');
-            const imageFile = document.getElementById('accImage').files[0];
-            
-            if (!imageFile) return;
+        // --- وظائف الرفع والإضافة والتعديل ---
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري الرفع للـ Cloudflare...';
-            errorText.classList.add('hidden');
+        async function handleImageSelect(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            document.getElementById('uploadPrompt').classList.add('hidden');
+            const preview = document.getElementById('imagePreview');
+            preview.src = URL.createObjectURL(file);
+            document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            document.getElementById('uploadOverlay').classList.remove('hidden');
+            document.getElementById('uploadSuccess').classList.add('hidden');
+            document.getElementById('submitAccBtn').disabled = true;
 
             const formData = new FormData();
-            formData.append('sellerName', currentSeller);
-            formData.append('image', imageFile);
-            formData.append('title', document.getElementById('accTitle').value);
-            formData.append('bankPrice', document.getElementById('accBankPrice').value);
-            formData.append('webPrice', document.getElementById('accWebPrice').value);
-            formData.append('email', document.getElementById('accEmail').value);
-            formData.append('password', document.getElementById('accPassword').value);
-            formData.append('isGg', document.getElementById('accGg').checked);
-            formData.append('isIos', document.getElementById('accIos').checked);
+            formData.append('image', file);
 
             try {
-                const response = await fetch(`${API_BASE_URL}/add-account`, {
-                    method: 'POST',
-                    body: formData 
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    closeAddModal();
-                    document.getElementById('addForm').reset(); 
-                    showToast("تمت إضافة الحساب بنجاح!");
-                    fetchMyAccounts(); 
-                } else {
-                    errorText.innerText = result.message || "حدث خطأ أثناء الرفع";
-                    errorText.classList.remove('hidden');
-                }
-            } catch (error) {
-                errorText.innerText = "تعذر الاتصال بالسيرفر. حاول مرة أخرى.";
-                errorText.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = 'نشر الحساب <i class="fa-solid fa-cloud-arrow-up ml-2"></i>';
+                const res = await fetch(`${API_BASE_URL}/upload-image`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if(data.success) {
+                    document.getElementById('uploadedImageUrl').value = data.imageUrl;
+                    document.getElementById('uploadOverlay').classList.add('hidden');
+                    document.getElementById('uploadSuccess').classList.remove('hidden');
+                    document.getElementById('submitAccBtn').disabled = false;
+                } else throw new Error();
+            } catch(e) {
+                alert('حدث خطأ في رفع الصورة، تأكد من الاتصال');
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPrompt').classList.remove('hidden');
             }
         }
 
-        function openAddModal() {
-            document.getElementById('addAccountModal').classList.remove('hidden');
+        async function saveAccount(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitAccBtn');
+            const imgUrl = document.getElementById('uploadedImageUrl').value;
+            
+            if(!imgUrl) { alert('المرجو انتظار اكتمال رفع الصورة'); return; }
+
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            
+            const payload = {
+                id: document.getElementById('editAccountId').value || null,
+                sellerName: currentSeller,
+                imgUrl: imgUrl,
+                title: document.getElementById('accTitle').value,
+                bankPrice: document.getElementById('accBankPrice').value,
+                webPrice: document.getElementById('accWebPrice').value,
+                email: document.getElementById('accEmail').value,
+                password: document.getElementById('accPassword').value,
+                isGg: document.getElementById('accGg').checked,
+                isGameCenter: document.getElementById('accGameCenter').checked
+            };
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/save-account`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if(result.success) {
+                    closeAddEditView();
+                    showToast("تم حفظ الحساب بنجاح!");
+                    fetchMyAccounts();
+                } else alert('فشل الحفظ');
+            } catch(e) { alert('خطأ في الاتصال'); }
+            finally { btn.disabled = false; btn.innerHTML = 'حفظ الحساب <i class="fa-solid fa-floppy-disk ml-2"></i>'; }
         }
 
-        function closeAddModal() {
-            document.getElementById('addAccountModal').classList.add('hidden');
-            document.getElementById('submitError').classList.add('hidden');
+        async function changeStatus(id, status) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/update-status`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({id, status, sellerName: currentSeller})
+                });
+                if((await res.json()).success) { showToast("تم تحديث الحالة"); fetchMyAccounts(); }
+            } catch(e) { alert('فشل تغيير الحالة'); }
         }
 
-        function showToast(message) {
+        function openAddEditView() {
+            document.getElementById('accForm').reset();
+            document.getElementById('editAccountId').value = '';
+            document.getElementById('uploadedImageUrl').value = '';
+            document.getElementById('formTitle').innerText = 'إضافة حساب جديد';
+            document.getElementById('uploadPrompt').classList.remove('hidden');
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            
+            document.getElementById('dashboardScreen').classList.add('hidden');
+            document.getElementById('dashboardScreen').classList.remove('flex');
+            document.getElementById('addEditScreen').classList.remove('hidden');
+            document.getElementById('addEditScreen').classList.add('flex');
+        }
+
+        function editAccount(id) {
+            const acc = allMyAccounts[id];
+            if(!acc) return;
+            openAddEditView();
+            document.getElementById('formTitle').innerText = 'تعديل الحساب';
+            document.getElementById('editAccountId').value = id;
+            document.getElementById('uploadedImageUrl').value = acc.img;
+            
+            document.getElementById('accTitle').value = acc.title;
+            document.getElementById('accBankPrice').value = acc.bank_price || '';
+            document.getElementById('accWebPrice').value = acc.price_web;
+            document.getElementById('accEmail').value = acc.email || '';
+            document.getElementById('accPassword').value = acc.password || '';
+            document.getElementById('accGg').checked = acc.gg === true || acc.gg === 'true';
+            document.getElementById('accGameCenter').checked = acc.game_center === true || acc.game_center === 'true';
+
+            document.getElementById('uploadPrompt').classList.add('hidden');
+            document.getElementById('imagePreview').src = acc.img;
+            document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            document.getElementById('uploadOverlay').classList.add('hidden');
+            document.getElementById('uploadSuccess').classList.remove('hidden');
+        }
+
+        function closeAddEditView() {
+            document.getElementById('addEditScreen').classList.add('hidden');
+            document.getElementById('addEditScreen').classList.remove('flex');
+            document.getElementById('dashboardScreen').classList.remove('hidden');
+            document.getElementById('dashboardScreen').classList.add('flex');
+        }
+
+        function showToast(msg) {
+            document.getElementById('toastMsg').innerText = msg;
             const toast = document.getElementById('toast');
-            document.getElementById('toastMsg').innerText = message;
             toast.classList.remove('opacity-0');
             setTimeout(() => toast.classList.add('opacity-0'), 3000);
         }
 
-        function copyText(text) {
-            if (!text) return;
-            navigator.clipboard.writeText(text).then(() => showToast("تم النسخ بنجاح"));
-        }
-
-        async function downloadImage(imageSrc, id) {
-            try {
-                const response = await fetch(imageSrc);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = `Account_${id}.webp`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-            } catch (err) {
-                alert("حدث خطأ أثناء تنزيل الصورة");
-            }
-        }
-
-        function actionAlert(action) {
-            alert(`سيتم برمجة زر (${action}) في الخطوة القادمة، ليتصل بالسيرفر مباشرة!`);
-        }
-
         function logout() {
-            localStorage.removeItem('epec_seller_key'); 
+            localStorage.removeItem('epec_seller_key');
             currentSeller = '';
             document.getElementById('sellerKeyInput').value = '';
             document.getElementById('dashboardScreen').classList.add('hidden');
