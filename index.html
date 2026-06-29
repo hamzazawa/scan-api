@@ -42,7 +42,6 @@
         .card h3 { margin: 0 0 10px 0; font-size: 24px; }
         .card p { margin: 0; font-size: 18px; color: #ddd; }
         
-        /* العداد التنازلي */
         #timer-container { font-size: 28px; font-weight: bold; color: #dc3545; background: #222; border-radius: 5px; padding: 10px; margin-bottom: 10px; border: 2px solid #dc3545; }
         #timer-display { font-size: 34px; }
 
@@ -69,9 +68,19 @@
         .highest-alert { color: #ffc107; font-weight: bold; font-size: 18px; margin: 10px 0; }
         #status-text { font-size: 20px; font-weight: bold; color: #ffc107; display: none; margin-top: 20px; }
 
+        .version-badge {
+            position: fixed; bottom: 10px; right: 10px;
+            background: #ffc107; color: black; padding: 5px 10px;
+            border-radius: 5px; font-weight: bold; font-size: 14px;
+            z-index: 999;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
     </style>
 </head>
 <body>
+
+    <div class="version-badge">النسخة 1.3</div>
 
     <div id="login-screen">
         <h2>اختر لاعبك للبدء:</h2>
@@ -143,10 +152,8 @@
         const db = firebase.database();
         const gameRef = db.ref('game_room');
 
-        // الترتيب المطلوب للمراكز (6 جولات)
         const POSITIONS_ORDER = ['GK', 'CB', 'CB', 'AMF', 'CMF', 'CF'];
 
-        // قاعدة بيانات اللاعبين (أساطير وحاليين)
         const PLAYERS_DB = {
             'GK': [ { name: "ياشين", pos: "GK" }, { name: "كورتوا", pos: "GK" }, { name: "نوير", pos: "GK" }, { name: "بوفون", pos: "GK" }, { name: "أليسون", pos: "GK" }, { name: "كاسياس", pos: "GK" } ],
             'CB': [ { name: "مالديني", pos: "CB" }, { name: "راموس", pos: "CB" }, { name: "نيستا", pos: "CB" }, { name: "فان دايك", pos: "CB" }, { name: "بويول", pos: "CB" }, { name: "بيكنباور", pos: "CB" }, { name: "ماركينيوس", pos: "CB" }, { name: "دياز", pos: "CB" } ],
@@ -159,14 +166,18 @@
         let localData = null;
 
         function joinGame(role) {
-            myRole = role;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'flex';
-            
-            if(myRole === 'player1') document.getElementById('you-p1').innerText = "(أنت)";
-            else document.getElementById('you-p2').innerText = "(أنت)";
+            try {
+                myRole = role;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'flex';
+                
+                if(myRole === 'player1') document.getElementById('you-p1').innerText = "(أنت)";
+                else document.getElementById('you-p2').innerText = "(أنت)";
 
-            listenToGame();
+                listenToGame();
+            } catch (error) {
+                alert("حدث خطأ أثناء الدخول: " + error.message);
+            }
         }
 
         function listenToGame() {
@@ -174,18 +185,263 @@
                 localData = snapshot.val();
                 if (!localData) return;
                 updateUI();
+            }, (error) => {
+                alert("حدث خطأ في جلب البيانات من Firebase: " + error.message);
             });
         }
 
-        // مراقبة وتحديث العداد الزمني كل نصف ثانية (UI Loop)
         setInterval(() => {
-            if (!localData || !localData.auction || localData.auction.status !== 'active') return;
-            
-            let auc = localData.auction;
-            // حساب الوقت المتبقي
-            let timeLeft = Math.max(0, Math.floor((auc.endTime - Date.now()) / 1000));
-            document.getElementById('timer-display').innerText = timeLeft;
+            try {
+                if (!localData || !localData.auction || localData.auction.status !== 'active') return;
+                
+                let auc = localData.auction;
+                let timeLeft = Math.max(0, Math.floor((auc.endTime - Date.now()) / 1000));
+                document.getElementById('timer-display').innerText = timeLeft;
 
-            let bidGroup = document.getElementById('bid-buttons');
-            let takeBtn = document.getElementById('take-action');
-            let
+                let bidGroup = document.getElementById('bid-buttons');
+                let takeBtn = document.getElementById('take-action');
+                let skipBtn = document.getElementById('skip-action');
+
+                if (timeLeft > 0) {
+                    takeBtn.style.display = 'none';
+                    skipBtn.style.display = 'none';
+                    if (auc.highestBidder !== myRole) {
+                        bidGroup.style.display = 'block';
+                    } else {
+                        bidGroup.style.display = 'none';
+                    }
+                } else {
+                    bidGroup.style.display = 'none';
+                    if (auc.highestBidder === myRole) {
+                        takeBtn.style.display = 'block';
+                        skipBtn.style.display = 'none';
+                    } else if (auc.highestBidder === 'none') {
+                        takeBtn.style.display = 'none';
+                        skipBtn.style.display = 'block';
+                    } else {
+                        takeBtn.style.display = 'none';
+                        skipBtn.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error("Timer Loop Error:", error);
+            }
+        }, 500);
+
+        function updateUI() {
+            try {
+                if(localData.player1) document.getElementById('budget-p1').innerText = localData.player1.budget || 120;
+                if(localData.player2) document.getElementById('budget-p2').innerText = localData.player2.budget || 120;
+
+                if(localData.player1) renderPitch('pitch-p1', localData.player1.team);
+                if(localData.player2) renderPitch('pitch-p2', localData.player2.team);
+
+                let auc = localData.auction;
+                if (auc && auc.status === 'active') {
+                    document.getElementById('player-card').style.display = 'block';
+                    document.getElementById('status-text').style.display = 'none';
+                    document.getElementById('timer-container').style.display = 'block';
+                    
+                    document.getElementById('round-title').innerText = `الجولة ${auc.round + 1} من 6`;
+                    document.getElementById('card-name').innerText = auc.currentPlayerA.name;
+                    document.getElementById('card-pos').innerText = auc.currentPlayerA.pos;
+                    document.getElementById('current-bid').innerText = auc.currentBid;
+                    
+                    let bidderText = auc.highestBidder === 'player1' ? 'اللاعب الأول' : (auc.highestBidder === 'player2' ? 'اللاعب الثاني' : 'لا أحد');
+                    document.getElementById('highest-bidder').innerText = bidderText;
+                } else if (auc && auc.status === 'finished') {
+                    document.getElementById('player-card').style.display = 'none';
+                    document.getElementById('bid-buttons').style.display = 'none';
+                    document.getElementById('take-action').style.display = 'none';
+                    document.getElementById('skip-action').style.display = 'none';
+                    document.getElementById('timer-container').style.display = 'none';
+                    document.getElementById('status-text').style.display = 'block';
+                }
+            } catch (error) {
+                console.error("UI Update Error:", error);
+            }
+        }
+
+        function renderPitch(containerId, teamData) {
+            let container = document.getElementById(containerId);
+            let posData = { 'CF': [], 'AMF': [], 'CMF': [], 'CB': [], 'GK': [] };
+
+            if (teamData) {
+                let teamArray = Array.isArray(teamData) ? teamData : Object.values(teamData);
+                teamArray.forEach(p => { if(posData[p.pos]) posData[p.pos].push(p); });
+            }
+
+            container.innerHTML = `
+                <div class="pitch-row">${renderSpots(posData['CF'], 1)}</div>
+                <div class="pitch-row">${renderSpots(posData['AMF'], 1)}</div>
+                <div class="pitch-row">${renderSpots(posData['CMF'], 1)}</div>
+                <div class="pitch-row">${renderSpots(posData['CB'], 2)}</div>
+                <div class="pitch-row">${renderSpots(posData['GK'], 1)}</div>
+            `;
+        }
+
+        function renderSpots(playersArr, maxSpots) {
+            let html = '';
+            for(let i = 0; i < maxSpots; i++) {
+                if (playersArr[i]) {
+                    html += `<div class="player-spot filled">${playersArr[i].name}<br><span>${playersArr[i].price}M</span></div>`;
+                } else {
+                    html += `<div class="player-spot">+</div>`;
+                }
+            }
+            return html;
+        }
+
+        function placeBid(amount) {
+            try {
+                if (!localData || !localData.auction || localData.auction.status !== 'active') return;
+                let myBudget = localData[myRole].budget;
+                let newBid = localData.auction.currentBid + amount;
+
+                if (myBudget >= newBid) {
+                    gameRef.child('auction').update({
+                        currentBid: newBid,
+                        highestBidder: myRole,
+                        endTime: Date.now() + 20000 
+                    }).catch(err => alert("حدث خطأ أثناء المزايدة: " + err.message));
+                } else {
+                    alert("رصيدك لا يكفي لهذه المزايدة!");
+                }
+            } catch (error) {
+                alert("حدث خطأ في وظيفة المزايدة: " + error.message);
+            }
+        }
+
+        function takePlayer() {
+            try {
+                if (!localData || localData.auction.highestBidder !== myRole) return;
+                
+                let auc = localData.auction;
+                let pA = auc.currentPlayerA;
+                let pB = auc.currentPlayerB;
+                
+                pA.price = auc.currentBid; 
+                pB.price = 0;              
+
+                let myNewBudget = localData[myRole].budget - auc.currentBid;
+                let otherRole = myRole === 'player1' ? 'player2' : 'player1';
+
+                let myTeam = localData[myRole].team || [];
+                if(!Array.isArray(myTeam)) myTeam = Object.values(myTeam);
+                myTeam.push(pA);
+
+                let otherTeam = localData[otherRole].team || [];
+                if(!Array.isArray(otherTeam)) otherTeam = Object.values(otherTeam);
+                otherTeam.push(pB);
+
+                let updates = {};
+                updates[myRole] = { budget: myNewBudget, team: myTeam };
+                updates[otherRole] = { budget: localData[otherRole].budget, team: otherTeam };
+                updates['auction/status'] = 'processing'; 
+                
+                gameRef.update(updates).then(() => {
+                    startNextRound(auc.round + 1);
+                }).catch(err => alert("حدث خطأ أثناء أخذ اللاعب: " + err.message));
+            } catch (error) {
+                alert("حدث خطأ في وظيفة أخذ اللاعب: " + error.message);
+            }
+        }
+
+        function skipPlayer() {
+            try {
+                if (!localData || localData.auction.highestBidder !== 'none') return;
+                
+                let auc = localData.auction;
+                let pA = auc.currentPlayerA;
+                let pB = auc.currentPlayerB;
+                pA.price = 0; pB.price = 0;
+
+                let team1 = localData.player1.team || [];
+                if(!Array.isArray(team1)) team1 = Object.values(team1);
+                let team2 = localData.player2.team || [];
+                if(!Array.isArray(team2)) team2 = Object.values(team2);
+
+                if (Math.random() > 0.5) {
+                    team1.push(pA); team2.push(pB);
+                } else {
+                    team1.push(pB); team2.push(pA);
+                }
+
+                let updates = {
+                    'player1/team': team1,
+                    'player2/team': team2,
+                    'auction/status': 'processing'
+                };
+
+                gameRef.update(updates).then(() => {
+                    startNextRound(auc.round + 1);
+                }).catch(err => alert("حدث خطأ أثناء التخطي: " + err.message));
+            } catch (error) {
+                alert("حدث خطأ في وظيفة التخطي: " + error.message);
+            }
+        }
+
+        function startNextRound(roundIndex) {
+            try {
+                if (roundIndex >= POSITIONS_ORDER.length) {
+                    gameRef.child('auction').update({ status: 'finished' }).catch(err => alert("خطأ إنهاء اللعبة: " + err.message));
+                    return;
+                }
+                
+                let targetPos = POSITIONS_ORDER[roundIndex];
+                let draftedNames = [];
+                
+                if (localData && localData.player1 && localData.player2) {
+                    let t1 = localData.player1.team || [];
+                    let t2 = localData.player2.team || [];
+                    Object.values(t1).forEach(p => draftedNames.push(p.name));
+                    Object.values(t2).forEach(p => draftedNames.push(p.name));
+                }
+
+                let available = PLAYERS_DB[targetPos].filter(p => !draftedNames.includes(p.name));
+                if(available.length < 2) {
+                    alert("خطأ داخلي: لا يوجد عدد كافي من اللاعبين في مركز " + targetPos);
+                    return;
+                }
+
+                let shuffled = available.sort(() => 0.5 - Math.random());
+                let pA = shuffled[0];
+                let pB = shuffled[1];
+
+                gameRef.child('auction').set({
+                    round: roundIndex,
+                    currentPlayerA: pA,
+                    currentPlayerB: pB,
+                    currentBid: 0,
+                    highestBidder: 'none',
+                    endTime: Date.now() + 20000,
+                    status: 'active'
+                }).catch(err => alert("حدث خطأ أثناء إعداد لاعب جديد: " + err.message));
+            } catch (error) {
+                alert("حدث خطأ في الجولة التالية: " + error.message);
+            }
+        }
+
+        function resetGame() {
+            try {
+                if(!confirm("هل أنت متأكد من تصفير اللعبة وحذف التشكيلات؟")) return;
+                const initialState = {
+                    player1: { budget: 120, team: [] },
+                    player2: { budget: 120, team: [] },
+                    auction: { status: 'waiting' }
+                };
+                
+                gameRef.set(initialState)
+                    .then(() => {
+                        // إضافة تأخير بسيط جداً لضمان تحديث localData قبل استدعاء الجولة الأولى (حل مشكلة التزامن)
+                        setTimeout(() => {
+                            startNextRound(0); 
+                        }, 500);
+                    }).catch(err => alert("حدث خطأ أثناء التهيئة: " + err.message));
+            } catch (error) {
+                alert("حدث خطأ في وظيفة تصفير اللعبة: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
