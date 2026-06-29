@@ -3,371 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم البائعين - EPEC STORE</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; color: #0f172a; }
-        .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-    </style>
+    <title>لعبة المزاد - درافت</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="antialiased min-h-screen flex flex-col relative">
+<body>
 
-    <div id="loginScreen" class="flex flex-col justify-center items-center flex-grow p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm text-center">
-            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fa-solid fa-user-shield"></i></div>
-            <h2 class="text-2xl font-black text-gray-800 mb-2">بوابة البائعين</h2>
-            <input type="password" id="sellerKeyInput" placeholder="المفتاح السري..." class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-3.5 mb-4 text-center font-mono tracking-widest outline-none transition">
-            <button onclick="login(false)" id="loginBtn" class="w-full text-white bg-blue-600 hover:bg-blue-700 font-black rounded-xl text-sm px-5 py-3.5 text-center shadow-lg transition">تسجيل الدخول <i class="fa-solid fa-arrow-left-to-bracket ml-1"></i></button>
-            <p id="loginError" class="text-red-500 text-xs font-bold mt-3 hidden"></p>
+    <!-- شاشة اختيار اللاعب -->
+    <div id="login-screen">
+        <h2>اختر من أنت لتدخل الغرفة:</h2>
+        <button onclick="joinGame('player1')">أنا اللاعب الأول</button>
+        <button onclick="joinGame('player2')">أنا اللاعب الثاني</button>
+        <br><br>
+        <button onclick="resetGame()" style="background-color: red;">إعادة ضبط اللعبة من الصفر</button>
+    </div>
+
+    <!-- شاشة اللعب -->
+    <div id="game-screen" style="display: none;">
+        
+        <!-- اللاعب الأول -->
+        <div class="player-panel" id="panel-p1">
+            <h3>اللاعب الأول <span id="you-p1" style="color:yellow;"></span></h3>
+            <p>الميزانية: <span id="budget-p1" class="budget">120</span> مليون</p>
+            <h4>التشكيلة (6 لاعبين):</h4>
+            <ul id="team-p1"></ul>
         </div>
-    </div>
 
-    <div id="dashboardScreen" class="hidden flex-col flex-grow">
-        <header class="bg-white border-b border-gray-200 py-4 sticky top-0 z-40 shadow-sm">
-            <div class="container mx-auto px-4 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm"><i class="fa-solid fa-store"></i></div>
-                    <div><h1 class="text-sm font-black text-gray-800" id="welcomeName">مرحباً...</h1></div>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="openAddEditView()" class="bg-green-100 hover:bg-green-200 text-green-700 border border-green-300 px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1"><i class="fa-solid fa-plus"></i> إضافة</button>
-                    <button onclick="logout()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">خروج</button>
-                </div>
+        <!-- منطقة المزاد -->
+        <div class="auction-panel">
+            <h2>المزاد الحالي</h2>
+            <div id="player-card" class="card">
+                <h3 id="card-name">انتظر بدء المزاد...</h3>
+                <p>المركز: <span id="card-pos">-</span></p>
             </div>
-        </header>
-
-        <main class="container mx-auto px-4 py-6 flex-grow">
-            <h2 class="text-lg font-black text-gray-800 mb-4 border-r-4 border-blue-600 pr-2">حساباتي المعروضة</h2>
-            <div id="loadingDash" class="flex justify-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500"></i></div>
-            <div id="sellerAccountsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 hidden"></div>
-        </main>
-    </div>
-
-    <div id="addEditScreen" class="hidden flex-col flex-grow bg-white z-50 absolute inset-0 min-h-screen">
-        <header class="bg-white border-b border-gray-200 py-4 sticky top-0 z-40 shadow-sm">
-            <div class="container mx-auto px-4 flex justify-between items-center">
-                <h1 class="text-lg font-black text-gray-800" id="formTitle">إضافة حساب جديد</h1>
-                <button onclick="closeAddEditView()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">إلغاء <i class="fa-solid fa-arrow-left"></i></button>
+            
+            <div class="bid-info">
+                <p>أعلى مزايدة: <span id="current-bid">0</span> مليون</p>
+                <p>بواسطة: <span id="highest-bidder">لا أحد</span></p>
             </div>
-        </header>
 
-        <main class="container mx-auto px-4 py-6 max-w-lg flex-grow">
-            <form id="accForm" onsubmit="saveAccount(event)">
-                <input type="hidden" id="editAccountId">
-                <input type="hidden" id="uploadedImageUrl">
+            <button id="btn-bid" onclick="placeBid()">مزايدة (+1 مليون)</button>
+            <button id="btn-next" onclick="nextPlayer()" style="display: none; background: #28a745;">طرح لاعب جديد</button>
+        </div>
 
-                <div class="mb-5 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl p-4 text-center relative overflow-hidden">
-                    <label class="block text-sm font-bold text-gray-700 cursor-pointer w-full h-full">
-                        <span id="uploadPrompt"><i class="fa-solid fa-image text-3xl text-blue-500 mb-2 block"></i> اضغط لاختيار صورة الحساب</span>
-                        <input type="file" id="accImageInput" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
-                    </label>
-                    <div id="imagePreviewContainer" class="hidden mt-3 relative">
-                        <img id="imagePreview" class="w-full max-h-48 object-contain rounded-xl shadow-sm bg-black/5">
-                        <div id="uploadSuccess" class="absolute top-2 right-2 bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center hidden"><i class="fa-solid fa-check"></i></div>
-                    </div>
-                </div>
+        <!-- اللاعب الثاني -->
+        <div class="player-panel" id="panel-p2">
+            <h3>اللاعب الثاني <span id="you-p2" style="color:yellow;"></span></h3>
+            <p>الميزانية: <span id="budget-p2" class="budget">120</span> مليون</p>
+            <h4>التشكيلة (6 لاعبين):</h4>
+            <ul id="team-p2"></ul>
+        </div>
 
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-700 mb-1">عنوان الحساب <span class="text-red-500">*</span></label>
-                    <input type="text" id="accTitle" required placeholder="مثال: حساب بيس..." class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-700 mb-1">وصف الحساب (اختياري)</label>
-                    <textarea id="accDesc" placeholder="تفاصيل وإضافات الحساب..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-20 resize-none"></textarea>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">ثمن البيع (إجباري) <span class="text-red-500">*</span></label>
-                        <input type="number" id="accWebPrice" required placeholder="درهم" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none bg-blue-50/50">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">ثمن الشراء (اختياري)</label>
-                        <input type="number" id="accBankPrice" placeholder="درهم" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none bg-gray-50">
-                    </div>
-                </div>
-
-                <div class="space-y-3 mb-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                    <div><label class="block text-[10px] font-bold text-gray-500 mb-1">البريد الإلكتروني (اختياري)</label><input type="email" id="accEmail" dir="ltr" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs outline-none"></div>
-                    <div><label class="block text-[10px] font-bold text-gray-500 mb-1">كلمة السر (اختياري)</label><input type="text" id="accPassword" dir="ltr" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs outline-none"></div>
-                </div>
-                <p class="text-[9px] text-red-500 font-bold mb-5 flex items-center gap-1"><i class="fa-solid fa-shield-halved"></i> البريد الإلكتروني وكلمة السر مشفرة ولن يتم مشاركتها مع أي شخص إلا أنت.</p>
-
-                <div class="flex gap-4 mb-6">
-                    <label class="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" id="accGg" class="w-4 h-4 text-blue-600 bg-gray-100 rounded focus:ring-blue-500"><span class="text-xs font-bold text-gray-700">مربوط بـ Google</span>
-                    </label>
-                    <label class="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" id="accGameCenter" class="w-4 h-4 text-blue-600 bg-gray-100 rounded focus:ring-blue-500"><span class="text-xs font-bold text-gray-700">مربوط بـ Game Center</span>
-                    </label>
-                </div>
-
-                <button type="submit" id="submitAccBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-xl transition shadow-lg text-sm flex justify-center items-center">حفظ الحساب <i class="fa-solid fa-floppy-disk ml-2"></i></button>
-            </form>
-        </main>
     </div>
 
-    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl opacity-0 transition-opacity duration-300 z-50 pointer-events-none whitespace-nowrap">
-        <span id="toastMsg">تمت العملية بنجاح</span> <i class="fa-solid fa-check text-green-400 ml-1"></i>
-    </div>
-
-    <script>
-        const API_BASE_URL = 'https://serverfirebase.fly.dev/api';
-        let currentSeller = '';
-        let allMyAccounts = {};
-        let currentImageFile = null; 
-
-        window.onload = () => {
-            const savedKey = localStorage.getItem('epec_seller_key');
-            if (savedKey) {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('dashboardScreen').classList.remove('hidden');
-                document.getElementById('dashboardScreen').classList.add('flex');
-                document.getElementById('sellerKeyInput').value = savedKey;
-                login(true);
-            }
-            document.getElementById('sellerKeyInput').addEventListener('keypress', e => { if(e.key === 'Enter') login(false); });
-        };
-
-        async function login(isAuto) {
-            const key = document.getElementById('sellerKeyInput').value.trim();
-            const btn = document.getElementById('loginBtn');
-            const errorText = document.getElementById('loginError');
-
-            if (!key) { errorText.innerText = "أدخل المفتاح السري!"; errorText.classList.remove('hidden'); return; }
-            if (!isAuto) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; btn.disabled = true; }
-            errorText.classList.add('hidden');
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/login`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sellerKey: key}) });
-                const result = await res.json();
-                if (result.success) {
-                    currentSeller = result.sellerName;
-                    localStorage.setItem('epec_seller_key', key);
-                    document.getElementById('welcomeName').innerText = `مرحباً، ${currentSeller}`;
-                    document.getElementById('loginScreen').classList.add('hidden');
-                    document.getElementById('dashboardScreen').classList.remove('hidden');
-                    document.getElementById('dashboardScreen').classList.add('flex');
-                    fetchMyAccounts();
-                } else {
-                    errorText.innerText = "المفتاح غير صحيح"; errorText.classList.remove('hidden');
-                    localStorage.removeItem('epec_seller_key');
-                    document.getElementById('dashboardScreen').classList.add('hidden');
-                    document.getElementById('dashboardScreen').classList.remove('flex');
-                    document.getElementById('loginScreen').classList.remove('hidden');
-                }
-            } catch (e) { errorText.innerText = "تعذر الاتصال بالسيرفر"; errorText.classList.remove('hidden'); }
-            finally { if (!isAuto) { btn.innerHTML = 'تسجيل الدخول <i class="fa-solid fa-arrow-left-to-bracket ml-1"></i>'; btn.disabled = false; } }
-        }
-
-        async function fetchMyAccounts() {
-            const grid = document.getElementById('sellerAccountsGrid');
-            grid.innerHTML = '';
-            document.getElementById('loadingDash').classList.remove('hidden');
-            grid.classList.add('hidden');
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/my-accounts/${currentSeller}`);
-                const result = await res.json();
-                document.getElementById('loadingDash').classList.add('hidden');
-                grid.classList.remove('hidden');
-
-                if (result.success && result.data) {
-                    allMyAccounts = result.data;
-                    const seenIds = new Set(); const uniqueAccounts = [];
-                    let rawArray = Object.keys(result.data).map(key => ({ id: key, ...result.data[key] })).reverse();
-                    
-                    rawArray.forEach(acc => { if (!seenIds.has(acc.id) && acc.status !== 'delete') { seenIds.add(acc.id); uniqueAccounts.push(acc); } });
-
-                    if(uniqueAccounts.length === 0) { grid.innerHTML = `<div class="col-span-full text-center py-8 text-gray-400 font-bold">لا توجد حسابات حالياً.</div>`; return;}
-
-                    uniqueAccounts.forEach(acc => {
-                        let statusBadge = ''; let toggleStatusBtn = ''; let soldBtn = '';
-
-                        if(acc.status === 'sold') {
-                            statusBadge = '<div class="absolute bottom-2 right-2 bg-red-600 text-white text-[9px] font-black px-2 py-1 rounded">مباع</div>';
-                            toggleStatusBtn = `<button onclick="changeStatus('${acc.id}', 'available')" class="bg-blue-50 text-blue-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-unlock block mb-1"></i>متاح</button>`;
-                            soldBtn = `<button disabled class="bg-gray-100 text-gray-400 py-1.5 rounded text-[10px] font-bold cursor-not-allowed"><i class="fa-solid fa-check-double block mb-1"></i>مباع</button>`;
-                        } else if(acc.status === 'att') {
-                            statusBadge = '<div class="absolute bottom-2 right-2 bg-yellow-500 text-white text-[9px] font-black px-2 py-1 rounded">مؤقت</div>';
-                            toggleStatusBtn = `<button onclick="changeStatus('${acc.id}', 'available')" class="bg-blue-50 text-blue-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-unlock block mb-1"></i>متاح</button>`;
-                            soldBtn = `<button onclick="markAsSold('${acc.id}')" class="bg-green-50 text-green-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-check block mb-1"></i>مباع</button>`;
-                        } else {
-                            statusBadge = '<div class="absolute bottom-2 right-2 bg-blue-600 text-white text-[9px] font-black px-2 py-1 rounded">متوفر</div>';
-                            toggleStatusBtn = `<button onclick="changeStatus('${acc.id}', 'att')" class="bg-yellow-50 text-yellow-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-clock block mb-1"></i>مؤقت</button>`;
-                            soldBtn = `<button onclick="markAsSold('${acc.id}')" class="bg-green-50 text-green-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-check block mb-1"></i>مباع</button>`;
-                        }
-
-                        grid.innerHTML += `
-                        <div class="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm flex flex-col">
-                            <div class="relative w-full h-48 bg-gray-100 flex justify-center items-center overflow-hidden group">
-                                <img src="${acc.img}" class="w-full h-full object-contain">
-                                <button onclick="window.open('${acc.img}', '_blank')" class="absolute top-2 right-2 bg-black/60 hover:bg-black text-white w-8 h-8 rounded-full flex justify-center items-center backdrop-blur-sm">
-                                    <i class="fa-solid fa-download text-xs"></i>
-                                </button>
-                                ${statusBadge}
-                            </div>
-                            <div class="p-3 flex-grow flex flex-col">
-                                <h3 class="font-bold text-xs text-gray-800 mb-2 line-clamp-1">${acc.title}</h3>
-                                <div class="flex gap-2 mb-3">
-                                    <div class="flex-1 bg-gray-50 border border-gray-100 p-1.5 rounded-lg text-center">
-                                        <p class="text-[9px] text-gray-400 font-bold">الشراء</p>
-                                        <p class="text-xs font-black text-gray-600">${acc.bank_price || 0}</p>
-                                    </div>
-                                    <div class="flex-1 bg-blue-50 border border-blue-100 p-1.5 rounded-lg text-center">
-                                        <p class="text-[9px] text-blue-500 font-bold">البيع</p>
-                                        <p class="text-xs font-black text-blue-700">${acc.price_web}</p>
-                                    </div>
-                                </div>
-                                <div class="space-y-1.5 mb-3">
-                                    <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded p-1.5">
-                                        <i class="fa-solid fa-envelope text-gray-400 text-[10px] ml-1"></i>
-                                        <span class="text-[10px] font-bold text-gray-700 flex-grow truncate dir-ltr text-left">${acc.email || 'لا يوجد'}</span>
-                                        <button onclick="copyText('${acc.email}')" class="text-gray-400 hover:text-blue-500 transition px-1"><i class="fa-regular fa-copy text-[11px]"></i></button>
-                                    </div>
-                                    <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded p-1.5">
-                                        <i class="fa-solid fa-key text-gray-400 text-[10px] ml-1"></i>
-                                        <span class="text-[10px] font-bold text-gray-700 flex-grow truncate dir-ltr text-left">${acc.password || 'لا يوجد'}</span>
-                                        <button onclick="copyText('${acc.password}')" class="text-gray-400 hover:text-blue-500 transition px-1"><i class="fa-regular fa-copy text-[11px]"></i></button>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-4 gap-1.5 mt-auto pt-2 border-t border-gray-100">
-                                    <button onclick="changeStatus('${acc.id}', 'delete')" class="bg-red-50 text-red-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-trash-can block mb-1"></i>حذف</button>
-                                    <button onclick="editAccount('${acc.id}')" class="bg-orange-50 text-orange-600 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-pen block mb-1"></i>تعديل</button>
-                                    ${toggleStatusBtn}
-                                    ${soldBtn}
-                                </div>
-                            </div>
-                        </div>`;
-                    });
-                }
-            } catch (e) { grid.innerHTML = `<div class="col-span-full text-center text-red-500 text-sm">خطأ في الجلب</div>`; }
-        }
-
-        function handleImageSelect(e) {
-            currentImageFile = e.target.files[0];
-            if(!currentImageFile) return;
-            document.getElementById('uploadPrompt').classList.add('hidden');
-            document.getElementById('imagePreview').src = URL.createObjectURL(currentImageFile);
-            document.getElementById('imagePreviewContainer').classList.remove('hidden');
-        }
-
-        async function saveAccount(e) {
-            e.preventDefault();
-            const btn = document.getElementById('submitAccBtn');
-            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ والرفع...';
-            
-            let imgUrl = document.getElementById('uploadedImageUrl').value;
-            
-            if (currentImageFile) {
-                const formData = new FormData(); formData.append('image', currentImageFile);
-                try {
-                    const res = await fetch(`${API_BASE_URL}/upload-image`, { method: 'POST', body: formData });
-                    const data = await res.json();
-                    if(data.success) imgUrl = data.imageUrl; else throw new Error();
-                } catch(e) {
-                    alert('خطأ في رفع الصورة، تأكد من الاتصال');
-                    btn.disabled = false; btn.innerHTML = 'حفظ الحساب <i class="fa-solid fa-floppy-disk ml-2"></i>'; return;
-                }
-            }
-
-            if(!imgUrl) { alert('المرجو اختيار صورة للحساب'); btn.disabled = false; btn.innerHTML = 'حفظ الحساب <i class="fa-solid fa-floppy-disk ml-2"></i>'; return; }
-            
-            const payload = {
-                id: document.getElementById('editAccountId').value || null, sellerName: currentSeller, imgUrl: imgUrl,
-                title: document.getElementById('accTitle').value.trim(),
-                desc: document.getElementById('accDesc').value.trim(),
-                bankPrice: document.getElementById('accBankPrice').value,
-                webPrice: document.getElementById('accWebPrice').value,
-                email: document.getElementById('accEmail').value, password: document.getElementById('accPassword').value,
-                isGg: document.getElementById('accGg').checked, isGameCenter: document.getElementById('accGameCenter').checked
-            };
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/save-account`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-                if((await res.json()).success) { closeAddEditView(); showToast("تم حفظ الحساب بنجاح!"); fetchMyAccounts(); } else alert('فشل الحفظ');
-            } catch(e) { alert('خطأ في الاتصال'); }
-            finally { btn.disabled = false; btn.innerHTML = 'حفظ الحساب <i class="fa-solid fa-floppy-disk ml-2"></i>'; }
-        }
-
-        async function changeStatus(id, status) {
-            try {
-                const res = await fetch(`${API_BASE_URL}/update-status`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id, status, sellerName: currentSeller}) });
-                if((await res.json()).success) { showToast("تم تحديث الحالة"); fetchMyAccounts(); }
-            } catch(e) { alert('فشل تغيير الحالة'); }
-        }
-
-        async function markAsSold(id) {
-            let price = prompt("أدخل ثمن البيع النهائي (اتركه فارغاً لاعتماد السعر المعروض):");
-            if(price === null) return; // تم الإلغاء
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/mark-sold`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id, sellerName: currentSeller, sellPrice: price}) });
-                if((await res.json()).success) { showToast("تم تسجيل المبيع والأرشفة بنجاح!"); fetchMyAccounts(); } else alert('فشل التسجيل');
-            } catch(e) { alert('خطأ في الاتصال'); }
-        }
-
-        function openAddEditView() {
-            document.getElementById('accForm').reset();
-            document.getElementById('editAccountId').value = '';
-            document.getElementById('uploadedImageUrl').value = '';
-            document.getElementById('formTitle').innerText = 'إضافة حساب جديد';
-            currentImageFile = null;
-            document.getElementById('uploadPrompt').classList.remove('hidden');
-            document.getElementById('imagePreviewContainer').classList.add('hidden');
-            document.getElementById('dashboardScreen').classList.add('hidden');
-            document.getElementById('dashboardScreen').classList.remove('flex');
-            document.getElementById('addEditScreen').classList.remove('hidden');
-            document.getElementById('addEditScreen').classList.add('flex');
-        }
-
-        function editAccount(id) {
-            const acc = allMyAccounts[id];
-            if(!acc) return;
-            openAddEditView();
-            document.getElementById('formTitle').innerText = 'تعديل الحساب';
-            document.getElementById('editAccountId').value = id;
-            document.getElementById('uploadedImageUrl').value = acc.img; 
-            document.getElementById('accTitle').value = acc.title;
-            document.getElementById('accDesc').value = acc.desc || '';
-            document.getElementById('accBankPrice').value = acc.bank_price || '';
-            document.getElementById('accWebPrice').value = acc.price_web;
-            document.getElementById('accEmail').value = acc.email || '';
-            document.getElementById('accPassword').value = acc.password || '';
-            document.getElementById('accGg').checked = acc.gg === true || acc.gg === 'true';
-            document.getElementById('accGameCenter').checked = acc.game_center === true || acc.game_center === 'true';
-
-            document.getElementById('uploadPrompt').classList.add('hidden');
-            document.getElementById('imagePreview').src = acc.img;
-            document.getElementById('imagePreviewContainer').classList.remove('hidden');
-        }
-
-        function closeAddEditView() {
-            document.getElementById('addEditScreen').classList.add('hidden');
-            document.getElementById('addEditScreen').classList.remove('flex');
-            document.getElementById('dashboardScreen').classList.remove('hidden');
-            document.getElementById('dashboardScreen').classList.add('flex');
-        }
-
-        function showToast(msg) {
-            document.getElementById('toastMsg').innerText = msg;
-            const toast = document.getElementById('toast');
-            toast.classList.remove('opacity-0');
-            setTimeout(() => toast.classList.add('opacity-0'), 3000);
-        }
-
-        function copyText(text) { if (!text) return; navigator.clipboard.writeText(text).then(() => showToast("تم النسخ بنجاح")); }
-
-        function logout() {
-            localStorage.removeItem('epec_seller_key');
-            currentSeller = ''; document.getElementById('sellerKeyInput').value = '';
-            document.getElementById('dashboardScreen').classList.add('hidden');
-            document.getElementById('dashboardScreen').classList.remove('flex');
-            document.getElementById('loginScreen').classList.remove('hidden');
-        }
-    </script>
+    <!-- مكتبات فايربيز -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
