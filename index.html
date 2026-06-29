@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>درافت - المزاد اللحظي</title>
+    <title>درافت - المزاد اللحظي V1.4</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #121212; color: #ffffff; margin: 0; padding: 10px; text-align: center; }
@@ -39,15 +39,17 @@
         .budget { font-size: 22px; font-weight: bold; color: #28a745; }
         
         .card { background: linear-gradient(135deg, #0d6efd, #0043a8); padding: 20px; border-radius: 10px; margin: 15px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-        .card h3 { margin: 0 0 10px 0; font-size: 24px; }
-        .card p { margin: 0; font-size: 18px; color: #ddd; }
-        
+        .card h3 { margin: 10px 0 5px 0; font-size: 24px; }
+        .card p { margin: 0; font-size: 16px; color: #ddd; }
+        .card img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #ffc107; object-fit: cover; background: #fff; }
+        .card-ovr { display: inline-block; background: #dc3545; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; margin-bottom: 10px; }
+
         #timer-container { font-size: 28px; font-weight: bold; color: #dc3545; background: #222; border-radius: 5px; padding: 10px; margin-bottom: 10px; border: 2px solid #dc3545; }
         #timer-display { font-size: 34px; }
 
         .pitch {
             background-color: #2e7d32; border: 2px solid #fff; border-radius: 8px;
-            padding: 10px; min-height: 280px; display: flex; flex-direction: column;
+            padding: 10px; min-height: 300px; display: flex; flex-direction: column;
             justify-content: space-between; position: relative; margin-top: 15px; overflow: hidden;
         }
         .pitch::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: rgba(255,255,255,0.4); transform: translateY(-50%); }
@@ -56,32 +58,38 @@
         .pitch-row { display: flex; justify-content: center; gap: 10px; z-index: 1; }
         
         .player-spot {
-            width: 50px; height: 50px; border-radius: 50%;
+            width: 55px; height: 55px; border-radius: 50%;
             background: rgba(255,255,255,0.2); border: 2px dashed rgba(255,255,255,0.6);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 11px; color: white; text-align: center; line-height: 1.1;
+            font-size: 11px; color: white; text-align: center; line-height: 1.1; position: relative;
+            background-size: cover; background-position: center;
         }
-        .player-spot.filled { background: #ffc107; color: black; border: 2px solid #d39e00; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        .player-spot.filled span { font-size: 10px; color: #d33400; }
+        .player-spot.filled { border: 2px solid #ffc107; box-shadow: 0 2px 5px rgba(0,0,0,0.5); text-shadow: 1px 1px 2px black; font-weight: bold; }
+        .player-spot.filled span.price-tag { font-size: 10px; color: #ffc107; background: rgba(0,0,0,0.7); padding: 1px 3px; border-radius: 3px; }
         
+        .ovr-badge {
+            position: absolute; top: -5px; right: -5px; background: #dc3545; color: white;
+            border-radius: 50%; width: 22px; height: 22px; font-size: 11px;
+            line-height: 22px; font-weight: bold; border: 1px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
         #bid-buttons { margin-top: 15px; }
         .highest-alert { color: #ffc107; font-weight: bold; font-size: 18px; margin: 10px 0; }
-        #status-text { font-size: 20px; font-weight: bold; color: #ffc107; display: none; margin-top: 20px; }
+        #status-text { display: none; margin-top: 20px; }
 
         .version-badge {
             position: fixed; bottom: 10px; right: 10px;
             background: #ffc107; color: black; padding: 5px 10px;
             border-radius: 5px; font-weight: bold; font-size: 14px;
-            z-index: 999;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            z-index: 999; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
-
     </style>
 </head>
 <body>
 
-    <div class="version-badge">النسخة 1.3</div>
+    <div class="version-badge">النسخة 1.4</div>
 
+    <!-- شاشة الدخول -->
     <div id="login-screen">
         <h2>اختر لاعبك للبدء:</h2>
         <button class="btn-primary" onclick="joinGame('player1')">الدخول كـ اللاعب الأول</button>
@@ -90,49 +98,57 @@
         <button class="btn-danger" onclick="resetGame()">إعادة ضبط اللعبة وبدء درافت جديد</button>
     </div>
 
+    <!-- شاشة اللعب -->
     <div id="game-screen">
         
+        <!-- اللاعب الأول -->
         <div class="player-panel" id="panel-p1">
             <h3>اللاعب الأول <span id="you-p1" style="color:#ffc107;"></span></h3>
             <p>الميزانية: <span id="budget-p1" class="budget">120</span> م</p>
             <div id="pitch-p1" class="pitch"></div>
         </div>
 
+        <!-- منطقة المزاد -->
         <div class="auction-panel">
             <div id="timer-container">الزمن: <span id="timer-display">20</span> ث</div>
             <h2 id="round-title">المزاد المباشر</h2>
             
             <div id="player-card" class="card">
+                <img id="card-img" src="" alt="Player">
+                <div class="card-ovr">طاقة: <span id="card-ovr-val">0</span></div>
                 <h3 id="card-name">...</h3>
                 <p>المركز: <span id="card-pos">-</span></p>
-                <p style="font-size: 12px; margin-top: 10px; color: #ccc;">(يوجد لاعب آخر مخفي في نفس المركز سيذهب مجاناً للطرف الآخر)</p>
+                <p style="font-size: 12px; margin-top: 10px; color: #ccc;">(يوجد لاعب آخر مخفي سيتجه مجاناً للطرف الآخر، نسبة 70% أن يكون أضعف!)</p>
             </div>
             
-            <div>
+            <div id="auction-controls">
                 <p style="font-size: 20px;">أعلى سعر: <strong id="current-bid" style="color:#ffc107; font-size: 24px;">0</strong> مليون</p>
                 <p>المتصدر: <span id="highest-bidder">لا أحد</span></p>
+
+                <!-- أزرار المزايدة -->
+                <div id="bid-buttons">
+                    <button class="btn-primary" onclick="placeBid(1)">+1 م</button>
+                    <button class="btn-primary" onclick="placeBid(5)">+5 م</button>
+                    <button class="btn-primary" onclick="placeBid(10)">+10 م</button>
+                    <button class="btn-primary" onclick="placeBid(20)">+20 م</button>
+                </div>
+
+                <div id="take-action" style="display: none; margin-top: 15px;">
+                    <p class="highest-alert">انتهى الوقت وأنت صاحب أعلى سعر!</p>
+                    <button class="btn-success" style="font-size: 18px; padding: 10px 30px;" onclick="takePlayer()">تأكيد أخذ اللاعب</button>
+                </div>
+
+                <div id="skip-action" style="display: none; margin-top: 10px;">
+                    <p class="highest-alert">انتهى الوقت ولم يزايد أحد</p>
+                    <button class="btn-warning" onclick="skipPlayer()">توزيع اللاعبين مجاناً وعشوائياً</button>
+                </div>
             </div>
 
-            <div id="bid-buttons">
-                <button class="btn-primary" onclick="placeBid(1)">+1 م</button>
-                <button class="btn-primary" onclick="placeBid(5)">+5 م</button>
-                <button class="btn-primary" onclick="placeBid(10)">+10 م</button>
-                <button class="btn-primary" onclick="placeBid(20)">+20 م</button>
-            </div>
-
-            <div id="take-action" style="display: none; margin-top: 15px;">
-                <p class="highest-alert">انتهى الوقت وأنت صاحب أعلى سعر!</p>
-                <button class="btn-success" style="font-size: 18px; padding: 10px 30px;" onclick="takePlayer()">تأكيد أخذ اللاعب</button>
-            </div>
-
-            <div id="skip-action" style="display: none; margin-top: 10px;">
-                <p class="highest-alert">انتهى الوقت ولم يزايد أحد</p>
-                <button class="btn-warning" onclick="skipPlayer()">توزيع اللاعبين مجاناً وعشوائياً</button>
-            </div>
-
-            <div id="status-text">تم اكتمال التشكيلة بنجاح!</div>
+            <!-- شاشة النتيجة النهائية -->
+            <div id="status-text"></div>
         </div>
 
+        <!-- اللاعب الثاني -->
         <div class="player-panel" id="panel-p2">
             <h3>اللاعب الثاني <span id="you-p2" style="color:#ffc107;"></span></h3>
             <p>الميزانية: <span id="budget-p2" class="budget">120</span> م</p>
@@ -154,13 +170,19 @@
 
         const POSITIONS_ORDER = ['GK', 'CB', 'CB', 'AMF', 'CMF', 'CF'];
 
+        // قاعدة بيانات محدثة تضم القوة (ovr) ولاعبين ضعاف وأقوياء لضمان عمل نسبة 70/30
         const PLAYERS_DB = {
-            'GK': [ { name: "ياشين", pos: "GK" }, { name: "كورتوا", pos: "GK" }, { name: "نوير", pos: "GK" }, { name: "بوفون", pos: "GK" }, { name: "أليسون", pos: "GK" }, { name: "كاسياس", pos: "GK" } ],
-            'CB': [ { name: "مالديني", pos: "CB" }, { name: "راموس", pos: "CB" }, { name: "نيستا", pos: "CB" }, { name: "فان دايك", pos: "CB" }, { name: "بويول", pos: "CB" }, { name: "بيكنباور", pos: "CB" }, { name: "ماركينيوس", pos: "CB" }, { name: "دياز", pos: "CB" } ],
-            'AMF': [ { name: "مارادونا", pos: "AMF" }, { name: "زيدان", pos: "AMF" }, { name: "دي بروين", pos: "AMF" }, { name: "رونالدينيو", pos: "AMF" }, { name: "كاكا", pos: "AMF" }, { name: "بيلينجهام", pos: "AMF" } ],
-            'CMF': [ { name: "تشافي", pos: "CMF" }, { name: "إنييستا", pos: "CMF" }, { name: "ماتيوس", pos: "CMF" }, { name: "مودريتش", pos: "CMF" }, { name: "كروس", pos: "CMF" }, { name: "جوليت", pos: "CMF" } ],
-            'CF': [ { name: "بيليه", pos: "CF" }, { name: "رونالدو R9", pos: "CF" }, { name: "كريستيانو", pos: "CF" }, { name: "ميسي", pos: "CF" }, { name: "مبابي", pos: "CF" }, { name: "فان باستن", pos: "CF" }, { name: "هالاند", pos: "CF" } ]
+            'GK': [ { name: "ياشين", pos: "GK", ovr: 94 }, { name: "كورتوا", pos: "GK", ovr: 90 }, { name: "نوير", pos: "GK", ovr: 89 }, { name: "بوفون", pos: "GK", ovr: 91 }, { name: "أليسون", pos: "GK", ovr: 89 }, { name: "أونانا", pos: "GK", ovr: 83 }, { name: "كيبا", pos: "GK", ovr: 80 } ],
+            'CB': [ { name: "مالديني", pos: "CB", ovr: 94 }, { name: "راموس", pos: "CB", ovr: 91 }, { name: "نيستا", pos: "CB", ovr: 92 }, { name: "فان دايك", pos: "CB", ovr: 90 }, { name: "بيكنباور", pos: "CB", ovr: 93 }, { name: "ماركينيوس", pos: "CB", ovr: 87 }, { name: "ماجواير", pos: "CB", ovr: 80 }, { name: "لنجليه", pos: "CB", ovr: 78 } ],
+            'AMF': [ { name: "مارادونا", pos: "AMF", ovr: 97 }, { name: "زيدان", pos: "AMF", ovr: 96 }, { name: "دي بروين", pos: "AMF", ovr: 91 }, { name: "رونالدينيو", pos: "AMF", ovr: 94 }, { name: "بيلينجهام", pos: "AMF", ovr: 89 }, { name: "هافرتز", pos: "AMF", ovr: 83 }, { name: "لينجارد", pos: "AMF", ovr: 76 } ],
+            'CMF': [ { name: "تشافي", pos: "CMF", ovr: 93 }, { name: "إنييستا", pos: "CMF", ovr: 94 }, { name: "ماتيوس", pos: "CMF", ovr: 93 }, { name: "مودريتش", pos: "CMF", ovr: 90 }, { name: "كروس", pos: "CMF", ovr: 90 }, { name: "فريد", pos: "CMF", ovr: 80 }, { name: "آرثر", pos: "CMF", ovr: 78 } ],
+            'CF': [ { name: "بيليه", pos: "CF", ovr: 98 }, { name: "رونالدو R9", pos: "CF", ovr: 97 }, { name: "كريستيانو", pos: "CF", ovr: 94 }, { name: "ميسي", pos: "CF", ovr: 94 }, { name: "مبابي", pos: "CF", ovr: 91 }, { name: "هالاند", pos: "CF", ovr: 91 }, { name: "موراتا", pos: "CF", ovr: 83 }, { name: "فيرنر", pos: "CF", ovr: 81 } ]
         };
+
+        // دالة توليد صورة اللاعب
+        function getAvatarUrl(name) {
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&bold=true&size=128`;
+        }
 
         let myRole = null; 
         let localData = null;
@@ -224,7 +246,7 @@
                     }
                 }
             } catch (error) {
-                console.error("Timer Loop Error:", error);
+                console.error("Timer Loop Error:", error.message);
             }
         }, 500);
 
@@ -239,26 +261,27 @@
                 let auc = localData.auction;
                 if (auc && auc.status === 'active') {
                     document.getElementById('player-card').style.display = 'block';
-                    document.getElementById('status-text').style.display = 'none';
+                    document.getElementById('auction-controls').style.display = 'block';
                     document.getElementById('timer-container').style.display = 'block';
+                    document.getElementById('status-text').style.display = 'none';
                     
                     document.getElementById('round-title').innerText = `الجولة ${auc.round + 1} من 6`;
                     document.getElementById('card-name').innerText = auc.currentPlayerA.name;
                     document.getElementById('card-pos').innerText = auc.currentPlayerA.pos;
+                    document.getElementById('card-ovr-val').innerText = auc.currentPlayerA.ovr;
+                    document.getElementById('card-img').src = getAvatarUrl(auc.currentPlayerA.name);
                     document.getElementById('current-bid').innerText = auc.currentBid;
                     
                     let bidderText = auc.highestBidder === 'player1' ? 'اللاعب الأول' : (auc.highestBidder === 'player2' ? 'اللاعب الثاني' : 'لا أحد');
                     document.getElementById('highest-bidder').innerText = bidderText;
                 } else if (auc && auc.status === 'finished') {
                     document.getElementById('player-card').style.display = 'none';
-                    document.getElementById('bid-buttons').style.display = 'none';
-                    document.getElementById('take-action').style.display = 'none';
-                    document.getElementById('skip-action').style.display = 'none';
+                    document.getElementById('auction-controls').style.display = 'none';
                     document.getElementById('timer-container').style.display = 'none';
-                    document.getElementById('status-text').style.display = 'block';
+                    showEndGameStats();
                 }
             } catch (error) {
-                console.error("UI Update Error:", error);
+                console.error("UI Update Error:", error.message);
             }
         }
 
@@ -284,7 +307,13 @@
             let html = '';
             for(let i = 0; i < maxSpots; i++) {
                 if (playersArr[i]) {
-                    html += `<div class="player-spot filled">${playersArr[i].name}<br><span>${playersArr[i].price}M</span></div>`;
+                    let p = playersArr[i];
+                    let bgImg = `url('${getAvatarUrl(p.name)}')`;
+                    html += `
+                    <div class="player-spot filled" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), ${bgImg};">
+                        <div class="ovr-badge">${p.ovr}</div>
+                        ${p.name}<br><span class="price-tag">${p.price}M</span>
+                    </div>`;
                 } else {
                     html += `<div class="player-spot">+</div>`;
                 }
@@ -381,6 +410,7 @@
             }
         }
 
+        // تطبيق قاعدة 70% / 30% هنا
         function startNextRound(roundIndex) {
             try {
                 if (roundIndex >= POSITIONS_ORDER.length) {
@@ -404,14 +434,39 @@
                     return;
                 }
 
-                let shuffled = available.sort(() => 0.5 - Math.random());
-                let pA = shuffled[0];
-                let pB = shuffled[1];
+                // ترتيب اللاعبين من الأقوى للأضعف
+                available.sort((a, b) => b.ovr - a.ovr);
+
+                // اختيار لاعب المزاد (pA) من النصف الأفضل تقريباً ليكون مغرياً
+                let topIndex = Math.floor(Math.random() * Math.ceil(available.length * 0.6));
+                let pA = available[topIndex];
+                available.splice(topIndex, 1); // إزالته من القائمة المتاحة
+
+                let pB;
+                let rand = Math.random();
+
+                if (rand <= 0.70) {
+                    // 70% اللاعب المخفي أضعف
+                    let weakerPlayers = available.filter(p => p.ovr < pA.ovr);
+                    if (weakerPlayers.length > 0) {
+                        pB = weakerPlayers[Math.floor(Math.random() * weakerPlayers.length)];
+                    } else {
+                        pB = available[available.length - 1]; // أضعف لاعب متبقي
+                    }
+                } else {
+                    // 30% اللاعب المخفي يساويه أو أقوى منه
+                    let strongerPlayers = available.filter(p => p.ovr >= pA.ovr);
+                    if (strongerPlayers.length > 0) {
+                        pB = strongerPlayers[Math.floor(Math.random() * strongerPlayers.length)];
+                    } else {
+                        pB = available[0]; // أقوى لاعب متبقي
+                    }
+                }
 
                 gameRef.child('auction').set({
                     round: roundIndex,
                     currentPlayerA: pA,
-                    currentPlayerB: pB,
+                    currentPlayerB: pB, // اللاعب المخفي
                     currentBid: 0,
                     highestBidder: 'none',
                     endTime: Date.now() + 20000,
@@ -419,6 +474,54 @@
                 }).catch(err => alert("حدث خطأ أثناء إعداد لاعب جديد: " + err.message));
             } catch (error) {
                 alert("حدث خطأ في الجولة التالية: " + error.message);
+            }
+        }
+
+        function showEndGameStats() {
+            try {
+                let t1 = localData.player1.team || [];
+                let t2 = localData.player2.team || [];
+                let t1Arr = Array.isArray(t1) ? t1 : Object.values(t1);
+                let t2Arr = Array.isArray(t2) ? t2 : Object.values(t2);
+
+                let sum1 = t1Arr.reduce((a, b) => a + (b.ovr || 0), 0);
+                let sum2 = t2Arr.reduce((a, b) => a + (b.ovr || 0), 0);
+                
+                let avg1 = t1Arr.length ? Math.round(sum1 / t1Arr.length) : 0;
+                let avg2 = t2Arr.length ? Math.round(sum2 / t2Arr.length) : 0;
+
+                let b1 = localData.player1.budget;
+                let b2 = localData.player2.budget;
+
+                let winnerText = "";
+                if (avg1 > avg2) winnerText = "اللاعب الأول هو البطل (أقوى تشكيلة)! 🏆";
+                else if (avg2 > avg1) winnerText = "اللاعب الثاني هو البطل (أقوى تشكيلة)! 🏆";
+                else {
+                    if (b1 > b2) winnerText = "تعادل في الطاقة.. اللاعب الأول يفوز لأنه وفر ميزانية أكبر! 💰";
+                    else if (b2 > b1) winnerText = "تعادل في الطاقة.. اللاعب الثاني يفوز لأنه وفر ميزانية أكبر! 💰";
+                    else winnerText = "تعادل مثالي في كل شيء! 🤝";
+                }
+
+                let resultDiv = document.getElementById('status-text');
+                resultDiv.innerHTML = `
+                    <h2 style="color:#0d6efd;">انتهى الدرافت! 🏁</h2>
+                    <div style="display:flex; justify-content:space-around; margin-top:20px; gap: 10px;">
+                        <div style="background:#1e1e1e; padding:15px; border-radius:10px; width:45%; border:2px solid ${avg1>=avg2?'#28a745':'#dc3545'};">
+                            <h4 style="margin:0 0 10px 0; color:#ffc107;">اللاعب الأول</h4>
+                            <p style="margin:5px;">متوسط طاقة الفريق: <strong>${avg1}</strong></p>
+                            <p style="margin:5px;">الميزانية المتبقية: <strong>${b1}M</strong></p>
+                        </div>
+                        <div style="background:#1e1e1e; padding:15px; border-radius:10px; width:45%; border:2px solid ${avg2>=avg1?'#28a745':'#dc3545'};">
+                            <h4 style="margin:0 0 10px 0; color:#ffc107;">اللاعب الثاني</h4>
+                            <p style="margin:5px;">متوسط طاقة الفريق: <strong>${avg2}</strong></p>
+                            <p style="margin:5px;">الميزانية المتبقية: <strong>${b2}M</strong></p>
+                        </div>
+                    </div>
+                    <h2 style="color:#28a745; margin-top:30px;">${winnerText}</h2>
+                `;
+                resultDiv.style.display = 'block';
+            } catch (error) {
+                alert("حدث خطأ أثناء عرض النتائج: " + error.message);
             }
         }
 
@@ -433,7 +536,6 @@
                 
                 gameRef.set(initialState)
                     .then(() => {
-                        // إضافة تأخير بسيط جداً لضمان تحديث localData قبل استدعاء الجولة الأولى (حل مشكلة التزامن)
                         setTimeout(() => {
                             startNextRound(0); 
                         }, 500);
