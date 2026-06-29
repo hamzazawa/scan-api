@@ -1,63 +1,341 @@
+ 
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة المزاد - درافت</title>
-    <link rel="stylesheet" href="style.css">
+    <title>درافت - المزاد اللحظي</title>
+    <style>
+        /* إعدادات عامة وتوافق مع الهاتف */
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #121212; color: #ffffff; margin: 0; padding: 10px; text-align: center; }
+        
+        button {
+            padding: 10px 15px; margin: 5px; font-size: 14px; font-weight: bold;
+            cursor: pointer; border: none; border-radius: 5px; transition: 0.2s;
+        }
+        button:active { transform: scale(0.95); }
+        .btn-primary { background-color: #0d6efd; color: white; }
+        .btn-success { background-color: #198754; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-warning { background-color: #ffc107; color: black; }
+
+        /* شاشة الدخول */
+        #login-screen { margin-top: 20vh; }
+        
+        /* تخطيط اللعبة */
+        #game-screen {
+            display: none;
+            flex-direction: column; /* عمودي للهواتف */
+            gap: 15px;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        /* شاشات الكمبيوتر: تخطيط أفقي */
+        @media (min-width: 768px) {
+            #game-screen { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+            .player-panel { width: 30%; }
+            .auction-panel { width: 35%; }
+        }
+
+        /* اللوحات */
+        .player-panel { background: #1e1e1e; padding: 15px; border-radius: 10px; border: 2px solid #333; }
+        .auction-panel { background: #1e1e1e; padding: 20px; border-radius: 10px; border: 2px solid #0d6efd; }
+        .budget { font-size: 22px; font-weight: bold; color: #28a745; }
+        
+        /* بطاقة المزاد */
+        .card { background: linear-gradient(135deg, #0d6efd, #0043a8); padding: 20px; border-radius: 10px; margin: 15px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .card h3 { margin: 0 0 10px 0; font-size: 24px; }
+        .card p { margin: 0; font-size: 18px; color: #ddd; }
+        
+        /* تصميم الملعب (التشكيلة) */
+        .pitch {
+            background-color: #2e7d32;
+            border: 2px solid #fff;
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        /* خطوط الملعب */
+        .pitch::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: rgba(255,255,255,0.4); transform: translateY(-50%); }
+        .pitch::after { content: ''; position: absolute; top: 50%; left: 50%; width: 60px; height: 60px; border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; transform: translate(-50%, -50%); }
+        
+        .pitch-row { display: flex; justify-content: center; gap: 10px; z-index: 1; }
+        
+        /* نقطة اللاعب في الملعب */
+        .player-spot {
+            width: 45px; height: 45px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); border: 2px dashed rgba(255,255,255,0.6);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 10px; color: white; text-align: center; line-height: 1.1;
+        }
+        .player-spot.filled {
+            background: #ffc107; color: black; border: 2px solid #d39e00; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .player-spot.filled span { font-size: 9px; color: #d33400; }
+        
+        #bid-buttons { margin-top: 15px; }
+        .highest-alert { color: #ffc107; font-weight: bold; font-size: 18px; margin: 10px 0; }
+
+    </style>
 </head>
 <body>
 
-    <!-- شاشة اختيار اللاعب -->
     <div id="login-screen">
-        <h2>اختر من أنت لتدخل الغرفة:</h2>
-        <button onclick="joinGame('player1')">أنا اللاعب الأول</button>
-        <button onclick="joinGame('player2')">أنا اللاعب الثاني</button>
-        <br><br>
-        <button onclick="resetGame()" style="background-color: red;">إعادة ضبط اللعبة من الصفر</button>
+        <h2>اختر لاعبك للبدء:</h2>
+        <button class="btn-primary" onclick="joinGame('player1')">الدخول كـ اللاعب الأول</button>
+        <button class="btn-primary" onclick="joinGame('player2')">الدخول كـ اللاعب الثاني</button>
+        <br><br><br>
+        <button class="btn-danger" onclick="resetGame()">إعادة ضبط اللعبة وحذف البيانات</button>
     </div>
 
-    <!-- شاشة اللعب -->
-    <div id="game-screen" style="display: none;">
+    <div id="game-screen">
         
-        <!-- اللاعب الأول -->
         <div class="player-panel" id="panel-p1">
-            <h3>اللاعب الأول <span id="you-p1" style="color:yellow;"></span></h3>
-            <p>الميزانية: <span id="budget-p1" class="budget">120</span> مليون</p>
-            <h4>التشكيلة (6 لاعبين):</h4>
-            <ul id="team-p1"></ul>
+            <h3>اللاعب الأول <span id="you-p1" style="color:#ffc107;"></span></h3>
+            <p>الميزانية: <span id="budget-p1" class="budget">120</span> م</p>
+            <div id="pitch-p1" class="pitch"></div>
         </div>
 
-        <!-- منطقة المزاد -->
         <div class="auction-panel">
-            <h2>المزاد الحالي</h2>
+            <h2>المزاد المباشر</h2>
             <div id="player-card" class="card">
-                <h3 id="card-name">انتظر بدء المزاد...</h3>
+                <h3 id="card-name">...</h3>
                 <p>المركز: <span id="card-pos">-</span></p>
             </div>
             
-            <div class="bid-info">
-                <p>أعلى مزايدة: <span id="current-bid">0</span> مليون</p>
-                <p>بواسطة: <span id="highest-bidder">لا أحد</span></p>
+            <div>
+                <p style="font-size: 20px;">أعلى سعر: <strong id="current-bid" style="color:#ffc107; font-size: 24px;">0</strong> مليون</p>
+                <p>المتصدر: <span id="highest-bidder">لا أحد</span></p>
             </div>
 
-            <button id="btn-bid" onclick="placeBid()">مزايدة (+1 مليون)</button>
-            <button id="btn-next" onclick="nextPlayer()" style="display: none; background: #28a745;">طرح لاعب جديد</button>
+            <div id="bid-buttons">
+                <button class="btn-primary" onclick="placeBid(1)">+1 م</button>
+                <button class="btn-primary" onclick="placeBid(5)">+5 م</button>
+                <button class="btn-primary" onclick="placeBid(10)">+10 م</button>
+                <button class="btn-primary" onclick="placeBid(20)">+20 م</button>
+            </div>
+
+            <div id="take-action" style="display: none; margin-top: 15px;">
+                <p class="highest-alert">أنت صاحب أعلى سعر!</p>
+                <button class="btn-success" style="font-size: 18px; padding: 10px 30px;" onclick="takePlayer()">أخذ اللاعب الآن</button>
+            </div>
+
+            <div id="skip-action" style="display: none; margin-top: 10px;">
+                <button class="btn-warning" onclick="skipPlayer()">تخطي (لاعب جديد)</button>
+            </div>
         </div>
 
-        <!-- اللاعب الثاني -->
         <div class="player-panel" id="panel-p2">
-            <h3>اللاعب الثاني <span id="you-p2" style="color:yellow;"></span></h3>
-            <p>الميزانية: <span id="budget-p2" class="budget">120</span> مليون</p>
-            <h4>التشكيلة (6 لاعبين):</h4>
-            <ul id="team-p2"></ul>
+            <h3>اللاعب الثاني <span id="you-p2" style="color:#ffc107;"></span></h3>
+            <p>الميزانية: <span id="budget-p2" class="budget">120</span> م</p>
+            <div id="pitch-p2" class="pitch"></div>
         </div>
 
     </div>
 
-    <!-- مكتبات فايربيز -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="script.js"></script>
+    
+    <script>
+        // إعدادات فايربيز (حسب حسابك)
+        const firebaseConfig = {
+            databaseURL: "https://hamza-kr-default-rtdb.firebaseio.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const gameRef = db.ref('game_room');
+
+        // قائمة اللاعبين
+        const playersDB = [
+            { name: "كورتوا", pos: "حارس" }, { name: "أليسون", pos: "حارس" }, { name: "نوير", pos: "حارس" }, { name: "بونو", pos: "حارس" },
+            { name: "راموس", pos: "دفاع" }, { name: "فان دايك", pos: "دفاع" }, { name: "دياز", pos: "دفاع" }, { name: "ماركينيوس", pos: "دفاع" }, { name: "حكيمي", pos: "دفاع" }, { name: "أرنولد", pos: "دفاع" },
+            { name: "دي بروين", pos: "وسط" }, { name: "مودريتش", pos: "وسط" }, { name: "بيدري", pos: "وسط" }, { name: "كروس", pos: "وسط" }, { name: "فالفيردي", pos: "وسط" }, { name: "بيلينجهام", pos: "وسط" },
+            { name: "مبابي", pos: "هجوم" }, { name: "هالاند", pos: "هجوم" }, { name: "ميسي", pos: "هجوم" }, { name: "رونالدو", pos: "هجوم" }, { name: "فينيسيوس", pos: "هجوم" }
+        ];
+
+        let myRole = null; 
+        let localData = null; // تخزين مؤقت للبيانات القادمة من فايربيز
+
+        // دخول الغرفة
+        function joinGame(role) {
+            myRole = role;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            
+            if(myRole === 'player1') document.getElementById('you-p1').innerText = "(أنت)";
+            else document.getElementById('you-p2').innerText = "(أنت)";
+
+            listenToGame();
+        }
+
+        // جلب البيانات اللحظية
+        function listenToGame() {
+            gameRef.on('value', (snapshot) => {
+                localData = snapshot.val();
+                if (!localData) return;
+                updateUI();
+            });
+        }
+
+        // تحديث الواجهة بالكامل
+        function updateUI() {
+            // تحديث الميزانية
+            document.getElementById('budget-p1').innerText = localData.player1.budget;
+            document.getElementById('budget-p2').innerText = localData.player2.budget;
+
+            // تحديث التشكيلات في الملعب
+            renderPitch('pitch-p1', localData.player1.team);
+            renderPitch('pitch-p2', localData.player2.team);
+
+            // تحديث المزاد
+            let auc = localData.auction;
+            if (auc && auc.currentPlayer) {
+                document.getElementById('card-name').innerText = auc.currentPlayer.name;
+                document.getElementById('card-pos').innerText = auc.currentPlayer.pos;
+                document.getElementById('current-bid').innerText = auc.currentBid;
+                
+                let bidderText = auc.highestBidder === 'player1' ? 'اللاعب الأول' : 
+                                 (auc.highestBidder === 'player2' ? 'اللاعب الثاني' : 'لا أحد');
+                document.getElementById('highest-bidder').innerText = bidderText;
+
+                // منطق إظهار وإخفاء الأزرار بذكاء
+                let bidGroup = document.getElementById('bid-buttons');
+                let takeBtn = document.getElementById('take-action');
+                let skipBtn = document.getElementById('skip-action');
+
+                if (auc.highestBidder === myRole) {
+                    // أنت المتصدر: يظهر لك زر أخذ اللاعب وتختفي أزرار المزايدة
+                    takeBtn.style.display = 'block';
+                    bidGroup.style.display = 'none';
+                    skipBtn.style.display = 'none';
+                } else if (auc.highestBidder !== 'none') {
+                    // خصمك هو المتصدر: تظهر لك أزرار المزايدة فقط
+                    takeBtn.style.display = 'none';
+                    bidGroup.style.display = 'block';
+                    skipBtn.style.display = 'none';
+                } else {
+                    // لا توجد مزايدة بعد: يمكن لأي شخص المزايدة أو تخطي اللاعب
+                    takeBtn.style.display = 'none';
+                    bidGroup.style.display = 'block';
+                    skipBtn.style.display = 'block';
+                }
+            }
+        }
+
+        // رسم اللاعبين داخل الملعب حسب المراكز
+        function renderPitch(containerId, teamData) {
+            let container = document.getElementById(containerId);
+            let positions = { 'هجوم': [], 'وسط': [], 'دفاع': [], 'حارس': [] };
+
+            // فرز اللاعبين حسب المركز
+            if (teamData) {
+                let teamArray = Array.isArray(teamData) ? teamData : Object.values(teamData);
+                teamArray.forEach(p => {
+                    if(positions[p.pos]) positions[p.pos].push(p);
+                });
+            }
+
+            // إنشاء صفوف الملعب (الهجوم فوق، ثم الوسط، الدفاع، والحارس تحت)
+            container.innerHTML = `
+                <div class="pitch-row">${renderSpots(positions['هجوم'], 1)}</div>
+                <div class="pitch-row">${renderSpots(positions['وسط'], 2)}</div>
+                <div class="pitch-row">${renderSpots(positions['دفاع'], 2)}</div>
+                <div class="pitch-row">${renderSpots(positions['حارس'], 1)}</div>
+            `;
+        }
+
+        // تجهيز شكل الدوائر في الملعب (فارغة أو ممتلئة)
+        function renderSpots(playersArr, maxSpots) {
+            let html = '';
+            for(let i = 0; i < maxSpots; i++) {
+                if (playersArr[i]) {
+                    html += `<div class="player-spot filled">${playersArr[i].name}<br><span>${playersArr[i].price}M</span></div>`;
+                } else {
+                    html += `<div class="player-spot">+</div>`;
+                }
+            }
+            return html;
+        }
+
+        // دالة المزايدة (+1, +5, +10, +20)
+        function placeBid(amount) {
+            if (!localData || !localData.auction.currentPlayer) return;
+            let myBudget = localData[myRole].budget;
+            let newBid = localData.auction.currentBid + amount;
+
+            if (myBudget >= newBid) {
+                gameRef.child('auction').update({
+                    currentBid: newBid,
+                    highestBidder: myRole
+                });
+            } else {
+                alert("رصيدك لا يكفي لهذه المزايدة!");
+            }
+        }
+
+        // دالة أخذ اللاعب (تنفذ فوراً عند ضغط المتصدر)
+        function takePlayer() {
+            if (!localData || localData.auction.highestBidder !== myRole) return;
+            
+            let auc = localData.auction;
+            let player = auc.currentPlayer;
+            player.price = auc.currentBid; // حفظ السعر الذي اشتراه به
+
+            let newBudget = localData[myRole].budget - auc.currentBid;
+            
+            // جلب التشكيلة الحالية وإضافة اللاعب الجديد
+            let currentTeam = localData[myRole].team || [];
+            let teamArray = Array.isArray(currentTeam) ? currentTeam : Object.values(currentTeam);
+            teamArray.push(player);
+
+            // تحديث بيانات اللاعب الفائز في القاعدة
+            gameRef.child(myRole).update({
+                budget: newBudget,
+                team: teamArray
+            }).then(() => {
+                // استدعاء لاعب جديد فوراً
+                spawnNewPlayer();
+            });
+        }
+
+        // تخطي اللاعب إذا لم يزايد عليه أحد
+        function skipPlayer() {
+            if (localData && localData.auction.highestBidder === 'none') {
+                spawnNewPlayer();
+            }
+        }
+
+        // سحب لاعب عشوائي وطرحه في المزاد
+        function spawnNewPlayer() {
+            let randomPlayer = playersDB[Math.floor(Math.random() * playersDB.length)];
+            gameRef.child('auction').set({
+                currentPlayer: randomPlayer,
+                currentBid: 0,
+                highestBidder: 'none'
+            });
+        }
+
+        // إعادة ضبط اللعبة وبدءها من الصفر
+        function resetGame() {
+            if(!confirm("هل أنت متأكد من تصفير اللعبة وحذف التشكيلات؟")) return;
+            let randomPlayer = playersDB[Math.floor(Math.random() * playersDB.length)];
+            const initialState = {
+                player1: { budget: 120, team: [] },
+                player2: { budget: 120, team: [] },
+                auction: { currentBid: 0, highestBidder: 'none', currentPlayer: randomPlayer }
+            };
+            gameRef.set(initialState)
+                .then(() => alert("تم بدء لعبة جديدة!"))
+                .catch(error => console.error("Reset Game Error: ", error));
+        }
+    </script>
 </body>
 </html>
