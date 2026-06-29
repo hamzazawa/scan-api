@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>درافت - المزاد اللحظي V1.4</title>
+    <title>درافت - المزاد اللحظي V1.5</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #121212; color: #ffffff; margin: 0; padding: 10px; text-align: center; }
@@ -17,6 +17,7 @@
         .btn-success { background-color: #198754; color: white; }
         .btn-danger { background-color: #dc3545; color: white; }
         .btn-warning { background-color: #ffc107; color: black; }
+        .btn-secondary { background-color: #6c757d; color: white; }
 
         #login-screen { margin-top: 20vh; }
         
@@ -41,7 +42,7 @@
         .card { background: linear-gradient(135deg, #0d6efd, #0043a8); padding: 20px; border-radius: 10px; margin: 15px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
         .card h3 { margin: 10px 0 5px 0; font-size: 24px; }
         .card p { margin: 0; font-size: 16px; color: #ddd; }
-        .card img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #ffc107; object-fit: cover; background: #fff; }
+        .card img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #ffc107; object-fit: cover; background: #b6e3f4; }
         .card-ovr { display: inline-block; background: #dc3545; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; margin-bottom: 10px; }
 
         #timer-container { font-size: 28px; font-weight: bold; color: #dc3545; background: #222; border-radius: 5px; padding: 10px; margin-bottom: 10px; border: 2px solid #dc3545; }
@@ -62,7 +63,7 @@
             background: rgba(255,255,255,0.2); border: 2px dashed rgba(255,255,255,0.6);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-size: 11px; color: white; text-align: center; line-height: 1.1; position: relative;
-            background-size: cover; background-position: center;
+            background-size: cover; background-position: center; background-color: #b6e3f4;
         }
         .player-spot.filled { border: 2px solid #ffc107; box-shadow: 0 2px 5px rgba(0,0,0,0.5); text-shadow: 1px 1px 2px black; font-weight: bold; }
         .player-spot.filled span.price-tag { font-size: 10px; color: #ffc107; background: rgba(0,0,0,0.7); padding: 1px 3px; border-radius: 3px; }
@@ -87,9 +88,8 @@
 </head>
 <body>
 
-    <div class="version-badge">النسخة 1.4</div>
+    <div class="version-badge">النسخة 1.5</div>
 
-    <!-- شاشة الدخول -->
     <div id="login-screen">
         <h2>اختر لاعبك للبدء:</h2>
         <button class="btn-primary" onclick="joinGame('player1')">الدخول كـ اللاعب الأول</button>
@@ -98,34 +98,31 @@
         <button class="btn-danger" onclick="resetGame()">إعادة ضبط اللعبة وبدء درافت جديد</button>
     </div>
 
-    <!-- شاشة اللعب -->
     <div id="game-screen">
         
-        <!-- اللاعب الأول -->
         <div class="player-panel" id="panel-p1">
             <h3>اللاعب الأول <span id="you-p1" style="color:#ffc107;"></span></h3>
             <p>الميزانية: <span id="budget-p1" class="budget">120</span> م</p>
             <div id="pitch-p1" class="pitch"></div>
         </div>
 
-        <!-- منطقة المزاد -->
         <div class="auction-panel">
             <div id="timer-container">الزمن: <span id="timer-display">20</span> ث</div>
             <h2 id="round-title">المزاد المباشر</h2>
             
             <div id="player-card" class="card">
                 <img id="card-img" src="" alt="Player">
+                <br>
                 <div class="card-ovr">طاقة: <span id="card-ovr-val">0</span></div>
                 <h3 id="card-name">...</h3>
                 <p>المركز: <span id="card-pos">-</span></p>
-                <p style="font-size: 12px; margin-top: 10px; color: #ccc;">(يوجد لاعب آخر مخفي سيتجه مجاناً للطرف الآخر، نسبة 70% أن يكون أضعف!)</p>
+                <p style="font-size: 12px; margin-top: 10px; color: #ccc;">(يوجد لاعب آخر مخفي سيتجه مجاناً للخصم، بنسبة 50% أضعف من هذا!)</p>
             </div>
             
             <div id="auction-controls">
                 <p style="font-size: 20px;">أعلى سعر: <strong id="current-bid" style="color:#ffc107; font-size: 24px;">0</strong> مليون</p>
                 <p>المتصدر: <span id="highest-bidder">لا أحد</span></p>
 
-                <!-- أزرار المزايدة -->
                 <div id="bid-buttons">
                     <button class="btn-primary" onclick="placeBid(1)">+1 م</button>
                     <button class="btn-primary" onclick="placeBid(5)">+5 م</button>
@@ -133,8 +130,13 @@
                     <button class="btn-primary" onclick="placeBid(20)">+20 م</button>
                 </div>
 
+                <div id="fold-action" style="display: none; margin-top: 15px;">
+                    <p style="color: #ccc; font-size: 14px;">لا تريد هذا اللاعب؟</p>
+                    <button class="btn-secondary" onclick="foldBid()">انسحاب (تخطي الوقت وإعطائه للخصم)</button>
+                </div>
+
                 <div id="take-action" style="display: none; margin-top: 15px;">
-                    <p class="highest-alert">انتهى الوقت وأنت صاحب أعلى سعر!</p>
+                    <p class="highest-alert" id="take-msg">انتهى الوقت وأنت صاحب أعلى سعر!</p>
                     <button class="btn-success" style="font-size: 18px; padding: 10px 30px;" onclick="takePlayer()">تأكيد أخذ اللاعب</button>
                 </div>
 
@@ -144,11 +146,9 @@
                 </div>
             </div>
 
-            <!-- شاشة النتيجة النهائية -->
             <div id="status-text"></div>
         </div>
 
-        <!-- اللاعب الثاني -->
         <div class="player-panel" id="panel-p2">
             <h3>اللاعب الثاني <span id="you-p2" style="color:#ffc107;"></span></h3>
             <p>الميزانية: <span id="budget-p2" class="budget">120</span> م</p>
@@ -170,18 +170,38 @@
 
         const POSITIONS_ORDER = ['GK', 'CB', 'CB', 'AMF', 'CMF', 'CF'];
 
-        // قاعدة بيانات محدثة تضم القوة (ovr) ولاعبين ضعاف وأقوياء لضمان عمل نسبة 70/30
+        // قاعدة بيانات ضخمة (150 لاعب = 50 قوي + 50 متوسط + 50 ضعيف)
         const PLAYERS_DB = {
-            'GK': [ { name: "ياشين", pos: "GK", ovr: 94 }, { name: "كورتوا", pos: "GK", ovr: 90 }, { name: "نوير", pos: "GK", ovr: 89 }, { name: "بوفون", pos: "GK", ovr: 91 }, { name: "أليسون", pos: "GK", ovr: 89 }, { name: "أونانا", pos: "GK", ovr: 83 }, { name: "كيبا", pos: "GK", ovr: 80 } ],
-            'CB': [ { name: "مالديني", pos: "CB", ovr: 94 }, { name: "راموس", pos: "CB", ovr: 91 }, { name: "نيستا", pos: "CB", ovr: 92 }, { name: "فان دايك", pos: "CB", ovr: 90 }, { name: "بيكنباور", pos: "CB", ovr: 93 }, { name: "ماركينيوس", pos: "CB", ovr: 87 }, { name: "ماجواير", pos: "CB", ovr: 80 }, { name: "لنجليه", pos: "CB", ovr: 78 } ],
-            'AMF': [ { name: "مارادونا", pos: "AMF", ovr: 97 }, { name: "زيدان", pos: "AMF", ovr: 96 }, { name: "دي بروين", pos: "AMF", ovr: 91 }, { name: "رونالدينيو", pos: "AMF", ovr: 94 }, { name: "بيلينجهام", pos: "AMF", ovr: 89 }, { name: "هافرتز", pos: "AMF", ovr: 83 }, { name: "لينجارد", pos: "AMF", ovr: 76 } ],
-            'CMF': [ { name: "تشافي", pos: "CMF", ovr: 93 }, { name: "إنييستا", pos: "CMF", ovr: 94 }, { name: "ماتيوس", pos: "CMF", ovr: 93 }, { name: "مودريتش", pos: "CMF", ovr: 90 }, { name: "كروس", pos: "CMF", ovr: 90 }, { name: "فريد", pos: "CMF", ovr: 80 }, { name: "آرثر", pos: "CMF", ovr: 78 } ],
-            'CF': [ { name: "بيليه", pos: "CF", ovr: 98 }, { name: "رونالدو R9", pos: "CF", ovr: 97 }, { name: "كريستيانو", pos: "CF", ovr: 94 }, { name: "ميسي", pos: "CF", ovr: 94 }, { name: "مبابي", pos: "CF", ovr: 91 }, { name: "هالاند", pos: "CF", ovr: 91 }, { name: "موراتا", pos: "CF", ovr: 83 }, { name: "فيرنر", pos: "CF", ovr: 81 } ]
+            'GK': [ 
+                { name: "ياشين", pos: "GK", ovr: 96 }, { name: "بوفون", pos: "GK", ovr: 95 }, { name: "كاسياس", pos: "GK", ovr: 93 }, { name: "نوير", pos: "GK", ovr: 92 }, { name: "كورتوا", pos: "GK", ovr: 90 }, { name: "أليسون", pos: "GK", ovr: 89 }, { name: "إيدرسون", pos: "GK", ovr: 89 }, { name: "أوبلاك", pos: "GK", ovr: 89 }, { name: "شتيجن", pos: "GK", ovr: 88 }, { name: "دوناروما", pos: "GK", ovr: 88 },
+                { name: "نافاس", pos: "GK", ovr: 87 }, { name: "بونو", pos: "GK", ovr: 86 }, { name: "مارتينيز", pos: "GK", ovr: 85 }, { name: "سومر", pos: "GK", ovr: 84 }, { name: "أونانا", pos: "GK", ovr: 83 }, { name: "ميندي", pos: "GK", ovr: 83 }, { name: "بيكنفورد", pos: "GK", ovr: 82 }, { name: "لينو", pos: "GK", ovr: 81 }, { name: "كيبا", pos: "GK", ovr: 80 }, { name: "روي باتريسيو", pos: "GK", ovr: 80 },
+                { name: "تاتاروسانو", pos: "GK", ovr: 79 }, { name: "نيتو", pos: "GK", ovr: 78 }, { name: "أريولا", pos: "GK", ovr: 78 }, { name: "هارت", pos: "GK", ovr: 77 }, { name: "كاريوس", pos: "GK", ovr: 76 }, { name: "ريكو", pos: "GK", ovr: 75 }, { name: "غوزان", pos: "GK", ovr: 74 }, { name: "باتلاند", pos: "GK", ovr: 73 }, { name: "أدريان", pos: "GK", ovr: 72 }, { name: "ريميرو", pos: "GK", ovr: 71 }
+            ],
+            'CB': [ 
+                { name: "مالديني", pos: "CB", ovr: 96 }, { name: "بيكنباور", pos: "CB", ovr: 95 }, { name: "نيستا", pos: "CB", ovr: 94 }, { name: "راموس", pos: "CB", ovr: 92 }, { name: "كانافارو", pos: "CB", ovr: 92 }, { name: "بويول", pos: "CB", ovr: 91 }, { name: "فان دايك", pos: "CB", ovr: 90 }, { name: "تياغو سيلفا", pos: "CB", ovr: 89 }, { name: "دياز", pos: "CB", ovr: 88 }, { name: "ماركينيوس", pos: "CB", ovr: 88 },
+                { name: "باستوني", pos: "CB", ovr: 86 }, { name: "أكانجي", pos: "CB", ovr: 85 }, { name: "كوندي", pos: "CB", ovr: 85 }, { name: "أوتاميندي", pos: "CB", ovr: 84 }, { name: "ستونز", pos: "CB", ovr: 84 }, { name: "ميلان", pos: "CB", ovr: 83 }, { name: "باو توريس", pos: "CB", ovr: 82 }, { name: "زوما", pos: "CB", ovr: 81 }, { name: "ماجواير", pos: "CB", ovr: 80 }, { name: "لنجليه", pos: "CB", ovr: 80 },
+                { name: "غارسيا", pos: "CB", ovr: 79 }, { name: "فويث", pos: "CB", ovr: 78 }, { name: "ماري", pos: "CB", ovr: 77 }, { name: "موستافي", pos: "CB", ovr: 76 }, { name: "جونز", pos: "CB", ovr: 75 }, { name: "ديوب", pos: "CB", ovr: 74 }, { name: "بايلي", pos: "CB", ovr: 73 }, { name: "فاليخو", pos: "CB", ovr: 72 }, { name: "روغاني", pos: "CB", ovr: 71 }, { name: "هولدينج", pos: "CB", ovr: 70 }
+            ],
+            'AMF': [ 
+                { name: "مارادونا", pos: "AMF", ovr: 98 }, { name: "زيدان", pos: "AMF", ovr: 97 }, { name: "رونالدينيو", pos: "AMF", ovr: 95 }, { name: "كاكا", pos: "AMF", ovr: 93 }, { name: "دي بروين", pos: "AMF", ovr: 92 }, { name: "بيلينجهام", pos: "AMF", ovr: 90 }, { name: "مولر", pos: "AMF", ovr: 89 }, { name: "برونو", pos: "AMF", ovr: 89 }, { name: "أوديجارد", pos: "AMF", ovr: 88 }, { name: "ديبالا", pos: "AMF", ovr: 88 },
+                { name: "ريوس", pos: "AMF", ovr: 86 }, { name: "ماديسون", pos: "AMF", ovr: 85 }, { name: "فيكير", pos: "AMF", ovr: 84 }, { name: "خاميس", pos: "AMF", ovr: 84 }, { name: "كوتينيو", pos: "AMF", ovr: 83 }, { name: "هافرتز", pos: "AMF", ovr: 83 }, { name: "مونت", pos: "AMF", ovr: 82 }, { name: "أوسكار", pos: "AMF", ovr: 81 }, { name: "زانيولو", pos: "AMF", ovr: 80 }, { name: "تاليسكا", pos: "AMF", ovr: 80 },
+                { name: "ماتا", pos: "AMF", ovr: 79 }, { name: "لينجارد", pos: "AMF", ovr: 78 }, { name: "ديلي آلي", pos: "AMF", ovr: 77 }, { name: "لانزيني", pos: "AMF", ovr: 76 }, { name: "باركلي", pos: "AMF", ovr: 75 }, { name: "بيريرا", pos: "AMF", ovr: 74 }, { name: "لوزانو", pos: "AMF", ovr: 73 }, { name: "ألميرون", pos: "AMF", ovr: 72 }, { name: "براهيمي", pos: "AMF", ovr: 71 }, { name: "عموري", pos: "AMF", ovr: 70 }
+            ],
+            'CMF': [ 
+                { name: "ماتيوس", pos: "CMF", ovr: 95 }, { name: "إنييستا", pos: "CMF", ovr: 94 }, { name: "تشافي", pos: "CMF", ovr: 94 }, { name: "جيرارد", pos: "CMF", ovr: 92 }, { name: "بيرلو", pos: "CMF", ovr: 91 }, { name: "مودريتش", pos: "CMF", ovr: 91 }, { name: "لامبارد", pos: "CMF", ovr: 90 }, { name: "كروس", pos: "CMF", ovr: 90 }, { name: "كانتي", pos: "CMF", ovr: 89 }, { name: "دي يونغ", pos: "CMF", ovr: 88 },
+                { name: "كوفاسيتش", pos: "CMF", ovr: 86 }, { name: "بارتي", pos: "CMF", ovr: 85 }, { name: "ساؤول", pos: "CMF", ovr: 84 }, { name: "تشاكا", pos: "CMF", ovr: 83 }, { name: "رابيو", pos: "CMF", ovr: 83 }, { name: "فابينيو", pos: "CMF", ovr: 82 }, { name: "هندرسون", pos: "CMF", ovr: 81 }, { name: "فريد", pos: "CMF", ovr: 80 }, { name: "ماكتومناي", pos: "CMF", ovr: 80 }, { name: "آرثر", pos: "CMF", ovr: 80 },
+                { name: "شيلفي", pos: "CMF", ovr: 79 }, { name: "إيلني", pos: "CMF", ovr: 78 }, { name: "غيندوزي", pos: "CMF", ovr: 77 }, { name: "نوبل", pos: "CMF", ovr: 76 }, { name: "هويبيرغ", pos: "CMF", ovr: 75 }, { name: "رينا", pos: "CMF", ovr: 74 }, { name: "ويلموتس", pos: "CMF", ovr: 73 }, { name: "درينكووتر", pos: "CMF", ovr: 72 }, { name: "سيسوكو", pos: "CMF", ovr: 71 }, { name: "روبرتو", pos: "CMF", ovr: 70 }
+            ],
+            'CF': [ 
+                { name: "بيليه", pos: "CF", ovr: 99 }, { name: "رونالدو R9", pos: "CF", ovr: 98 }, { name: "ميسي", pos: "CF", ovr: 97 }, { name: "كريستيانو", pos: "CF", ovr: 96 }, { name: "فان باستن", pos: "CF", ovr: 94 }, { name: "ليفاندوفسكي", pos: "CF", ovr: 92 }, { name: "مبابي", pos: "CF", ovr: 92 }, { name: "هالاند", pos: "CF", ovr: 91 }, { name: "سواريز", pos: "CF", ovr: 90 }, { name: "بنزيما", pos: "CF", ovr: 90 },
+                { name: "فيرمينو", pos: "CF", ovr: 86 }, { name: "خيسوس", pos: "CF", ovr: 85 }, { name: "إيزاك", pos: "CF", ovr: 84 }, { name: "فاردي", pos: "CF", ovr: 84 }, { name: "موراتا", pos: "CF", ovr: 83 }, { name: "ريتشارليسون", pos: "CF", ovr: 83 }, { name: "جيرو", pos: "CF", ovr: 82 }, { name: "نونيز", pos: "CF", ovr: 81 }, { name: "فيرنر", pos: "CF", ovr: 80 }, { name: "فيليكس", pos: "CF", ovr: 80 },
+                { name: "شيك", pos: "CF", ovr: 79 }, { name: "خيمينيز", pos: "CF", ovr: 78 }, { name: "ديباي", pos: "CF", ovr: 78 }, { name: "بونجاح", pos: "CF", ovr: 77 }, { name: "حمدالله", pos: "CF", ovr: 77 }, { name: "ماريانو", pos: "CF", ovr: 76 }, { name: "ماريجا", pos: "CF", ovr: 75 }, { name: "جوتا", pos: "CF", ovr: 74 }, { name: "باتشواي", pos: "CF", ovr: 73 }, { name: "برايثوايت", pos: "CF", ovr: 72 }
+            ]
         };
 
-        // دالة توليد صورة اللاعب
+        // دالة توليد الصورة باستخدام DiceBear (يعطي وجوه كرتونية جميلة ومضمونة الظهور)
         function getAvatarUrl(name) {
-            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&bold=true&size=128`;
+            return `https://api.dicebear.com/8.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
         }
 
         let myRole = null; 
@@ -208,7 +228,7 @@
                 if (!localData) return;
                 updateUI();
             }, (error) => {
-                alert("حدث خطأ في جلب البيانات من Firebase: " + error.message);
+                alert("حدث خطأ في جلب البيانات: " + error.message);
             });
         }
 
@@ -218,25 +238,48 @@
                 
                 let auc = localData.auction;
                 let timeLeft = Math.max(0, Math.floor((auc.endTime - Date.now()) / 1000));
+                
+                // إذا انسحب الخصم، نجعل الوقت 0 فوراً لإنهاء المزاد
+                if (auc.folded) {
+                    timeLeft = 0;
+                }
+
                 document.getElementById('timer-display').innerText = timeLeft;
 
                 let bidGroup = document.getElementById('bid-buttons');
+                let foldGroup = document.getElementById('fold-action');
                 let takeBtn = document.getElementById('take-action');
                 let skipBtn = document.getElementById('skip-action');
+                let takeMsg = document.getElementById('take-msg');
 
                 if (timeLeft > 0) {
                     takeBtn.style.display = 'none';
                     skipBtn.style.display = 'none';
+                    
                     if (auc.highestBidder !== myRole) {
                         bidGroup.style.display = 'block';
+                        // إظهار زر الانسحاب إذا كان الخصم قد وضع سعراً
+                        if(auc.highestBidder !== 'none') {
+                            foldGroup.style.display = 'block';
+                        } else {
+                            foldGroup.style.display = 'none';
+                        }
                     } else {
                         bidGroup.style.display = 'none';
+                        foldGroup.style.display = 'none';
                     }
                 } else {
                     bidGroup.style.display = 'none';
+                    foldGroup.style.display = 'none';
+                    
                     if (auc.highestBidder === myRole) {
                         takeBtn.style.display = 'block';
                         skipBtn.style.display = 'none';
+                        if(auc.folded) {
+                            takeMsg.innerText = "الخصم انسحب.. اللاعب لك الآن!";
+                        } else {
+                            takeMsg.innerText = "انتهى الوقت وأنت صاحب أعلى سعر!";
+                        }
                     } else if (auc.highestBidder === 'none') {
                         takeBtn.style.display = 'none';
                         skipBtn.style.display = 'block';
@@ -269,7 +312,10 @@
                     document.getElementById('card-name').innerText = auc.currentPlayerA.name;
                     document.getElementById('card-pos').innerText = auc.currentPlayerA.pos;
                     document.getElementById('card-ovr-val').innerText = auc.currentPlayerA.ovr;
+                    
+                    // استخدام دالة الصور الجديدة
                     document.getElementById('card-img').src = getAvatarUrl(auc.currentPlayerA.name);
+                    
                     document.getElementById('current-bid').innerText = auc.currentBid;
                     
                     let bidderText = auc.highestBidder === 'player1' ? 'اللاعب الأول' : (auc.highestBidder === 'player2' ? 'اللاعب الثاني' : 'لا أحد');
@@ -331,6 +377,7 @@
                     gameRef.child('auction').update({
                         currentBid: newBid,
                         highestBidder: myRole,
+                        folded: false, // إلغاء أي انسحاب سابق إذا زاد
                         endTime: Date.now() + 20000 
                     }).catch(err => alert("حدث خطأ أثناء المزايدة: " + err.message));
                 } else {
@@ -338,6 +385,18 @@
                 }
             } catch (error) {
                 alert("حدث خطأ في وظيفة المزايدة: " + error.message);
+            }
+        }
+
+        // دالة الانسحاب الجديدة
+        function foldBid() {
+            try {
+                if (!localData || localData.auction.status !== 'active') return;
+                gameRef.child('auction').update({
+                    folded: true // هذا سيجعل الوقت 0 للخصم فوراً
+                }).catch(err => alert("حدث خطأ أثناء الانسحاب: " + err.message));
+            } catch (error) {
+                alert("خطأ في الانسحاب: " + error.message);
             }
         }
 
@@ -410,7 +469,6 @@
             }
         }
 
-        // تطبيق قاعدة 70% / 30% هنا
         function startNextRound(roundIndex) {
             try {
                 if (roundIndex >= POSITIONS_ORDER.length) {
@@ -434,116 +492,5 @@
                     return;
                 }
 
-                // ترتيب اللاعبين من الأقوى للأضعف
                 available.sort((a, b) => b.ovr - a.ovr);
-
-                // اختيار لاعب المزاد (pA) من النصف الأفضل تقريباً ليكون مغرياً
-                let topIndex = Math.floor(Math.random() * Math.ceil(available.length * 0.6));
-                let pA = available[topIndex];
-                available.splice(topIndex, 1); // إزالته من القائمة المتاحة
-
-                let pB;
-                let rand = Math.random();
-
-                if (rand <= 0.70) {
-                    // 70% اللاعب المخفي أضعف
-                    let weakerPlayers = available.filter(p => p.ovr < pA.ovr);
-                    if (weakerPlayers.length > 0) {
-                        pB = weakerPlayers[Math.floor(Math.random() * weakerPlayers.length)];
-                    } else {
-                        pB = available[available.length - 1]; // أضعف لاعب متبقي
-                    }
-                } else {
-                    // 30% اللاعب المخفي يساويه أو أقوى منه
-                    let strongerPlayers = available.filter(p => p.ovr >= pA.ovr);
-                    if (strongerPlayers.length > 0) {
-                        pB = strongerPlayers[Math.floor(Math.random() * strongerPlayers.length)];
-                    } else {
-                        pB = available[0]; // أقوى لاعب متبقي
-                    }
-                }
-
-                gameRef.child('auction').set({
-                    round: roundIndex,
-                    currentPlayerA: pA,
-                    currentPlayerB: pB, // اللاعب المخفي
-                    currentBid: 0,
-                    highestBidder: 'none',
-                    endTime: Date.now() + 20000,
-                    status: 'active'
-                }).catch(err => alert("حدث خطأ أثناء إعداد لاعب جديد: " + err.message));
-            } catch (error) {
-                alert("حدث خطأ في الجولة التالية: " + error.message);
-            }
-        }
-
-        function showEndGameStats() {
-            try {
-                let t1 = localData.player1.team || [];
-                let t2 = localData.player2.team || [];
-                let t1Arr = Array.isArray(t1) ? t1 : Object.values(t1);
-                let t2Arr = Array.isArray(t2) ? t2 : Object.values(t2);
-
-                let sum1 = t1Arr.reduce((a, b) => a + (b.ovr || 0), 0);
-                let sum2 = t2Arr.reduce((a, b) => a + (b.ovr || 0), 0);
-                
-                let avg1 = t1Arr.length ? Math.round(sum1 / t1Arr.length) : 0;
-                let avg2 = t2Arr.length ? Math.round(sum2 / t2Arr.length) : 0;
-
-                let b1 = localData.player1.budget;
-                let b2 = localData.player2.budget;
-
-                let winnerText = "";
-                if (avg1 > avg2) winnerText = "اللاعب الأول هو البطل (أقوى تشكيلة)! 🏆";
-                else if (avg2 > avg1) winnerText = "اللاعب الثاني هو البطل (أقوى تشكيلة)! 🏆";
-                else {
-                    if (b1 > b2) winnerText = "تعادل في الطاقة.. اللاعب الأول يفوز لأنه وفر ميزانية أكبر! 💰";
-                    else if (b2 > b1) winnerText = "تعادل في الطاقة.. اللاعب الثاني يفوز لأنه وفر ميزانية أكبر! 💰";
-                    else winnerText = "تعادل مثالي في كل شيء! 🤝";
-                }
-
-                let resultDiv = document.getElementById('status-text');
-                resultDiv.innerHTML = `
-                    <h2 style="color:#0d6efd;">انتهى الدرافت! 🏁</h2>
-                    <div style="display:flex; justify-content:space-around; margin-top:20px; gap: 10px;">
-                        <div style="background:#1e1e1e; padding:15px; border-radius:10px; width:45%; border:2px solid ${avg1>=avg2?'#28a745':'#dc3545'};">
-                            <h4 style="margin:0 0 10px 0; color:#ffc107;">اللاعب الأول</h4>
-                            <p style="margin:5px;">متوسط طاقة الفريق: <strong>${avg1}</strong></p>
-                            <p style="margin:5px;">الميزانية المتبقية: <strong>${b1}M</strong></p>
-                        </div>
-                        <div style="background:#1e1e1e; padding:15px; border-radius:10px; width:45%; border:2px solid ${avg2>=avg1?'#28a745':'#dc3545'};">
-                            <h4 style="margin:0 0 10px 0; color:#ffc107;">اللاعب الثاني</h4>
-                            <p style="margin:5px;">متوسط طاقة الفريق: <strong>${avg2}</strong></p>
-                            <p style="margin:5px;">الميزانية المتبقية: <strong>${b2}M</strong></p>
-                        </div>
-                    </div>
-                    <h2 style="color:#28a745; margin-top:30px;">${winnerText}</h2>
-                `;
-                resultDiv.style.display = 'block';
-            } catch (error) {
-                alert("حدث خطأ أثناء عرض النتائج: " + error.message);
-            }
-        }
-
-        function resetGame() {
-            try {
-                if(!confirm("هل أنت متأكد من تصفير اللعبة وحذف التشكيلات؟")) return;
-                const initialState = {
-                    player1: { budget: 120, team: [] },
-                    player2: { budget: 120, team: [] },
-                    auction: { status: 'waiting' }
-                };
-                
-                gameRef.set(initialState)
-                    .then(() => {
-                        setTimeout(() => {
-                            startNextRound(0); 
-                        }, 500);
-                    }).catch(err => alert("حدث خطأ أثناء التهيئة: " + err.message));
-            } catch (error) {
-                alert("حدث خطأ في وظيفة تصفير اللعبة: " + error.message);
-            }
-        }
-    </script>
-</body>
-</html>
+                let
