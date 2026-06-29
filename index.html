@@ -493,4 +493,112 @@
                 }
 
                 available.sort((a, b) => b.ovr - a.ovr);
-                let
+                let topIndex = Math.floor(Math.random() * Math.ceil(available.length * 0.6));
+                let pA = available[topIndex];
+                available.splice(topIndex, 1);
+
+                let pB;
+                let rand = Math.random();
+
+                // التعديل: نسبة 50% أضعف / 50% مساوي أو أقوى
+                if (rand <= 0.50) {
+                    let weakerPlayers = available.filter(p => p.ovr < pA.ovr);
+                    if (weakerPlayers.length > 0) {
+                        pB = weakerPlayers[Math.floor(Math.random() * weakerPlayers.length)];
+                    } else {
+                        pB = available[available.length - 1]; 
+                    }
+                } else {
+                    let strongerPlayers = available.filter(p => p.ovr >= pA.ovr);
+                    if (strongerPlayers.length > 0) {
+                        pB = strongerPlayers[Math.floor(Math.random() * strongerPlayers.length)];
+                    } else {
+                        pB = available[0]; 
+                    }
+                }
+
+                gameRef.child('auction').set({
+                    round: roundIndex,
+                    currentPlayerA: pA,
+                    currentPlayerB: pB, 
+                    currentBid: 0,
+                    highestBidder: 'none',
+                    folded: false, // تصفير الانسحاب للجولة الجديدة
+                    endTime: Date.now() + 20000,
+                    status: 'active'
+                }).catch(err => alert("حدث خطأ أثناء إعداد لاعب جديد: " + err.message));
+            } catch (error) {
+                alert("حدث خطأ في الجولة التالية: " + error.message);
+            }
+        }
+
+        function showEndGameStats() {
+            try {
+                let t1 = localData.player1.team || [];
+                let t2 = localData.player2.team || [];
+                let t1Arr = Array.isArray(t1) ? t1 : Object.values(t1);
+                let t2Arr = Array.isArray(t2) ? t2 : Object.values(t2);
+
+                let sum1 = t1Arr.reduce((a, b) => a + (b.ovr || 0), 0);
+                let sum2 = t2Arr.reduce((a, b) => a + (b.ovr || 0), 0);
+                
+                let avg1 = t1Arr.length ? Math.round(sum1 / t1Arr.length) : 0;
+                let avg2 = t2Arr.length ? Math.round(sum2 / t2Arr.length) : 0;
+
+                let b1 = localData.player1.budget;
+                let b2 = localData.player2.budget;
+
+                let winnerText = "";
+                if (avg1 > avg2) winnerText = "اللاعب الأول هو البطل (أقوى تشكيلة)! 🏆";
+                else if (avg2 > avg1) winnerText = "اللاعب الثاني هو البطل (أقوى تشكيلة)! 🏆";
+                else {
+                    if (b1 > b2) winnerText = "تعادل في الطاقة.. اللاعب الأول يفوز لأنه وفر ميزانية أكبر! 💰";
+                    else if (b2 > b1) winnerText = "تعادل في الطاقة.. اللاعب الثاني يفوز لأنه وفر ميزانية أكبر! 💰";
+                    else winnerText = "تعادل مثالي في كل شيء! 🤝";
+                }
+
+                let resultDiv = document.getElementById('status-text');
+                resultDiv.innerHTML = `
+                    <h2 style="color:#0d6efd;">انتهى الدرافت! 🏁</h2>
+                    <div style="display:flex; justify-content:space-around; margin-top:20px; gap: 10px;">
+                        <div style="background:#1e1e1e; padding:15px; border-radius:10px; width:45%; border:2px solid ${avg1>=avg2?'#28a745':'#dc3545'};">
+                            <h4 style="margin:0 0 10px 0; color:#ffc107;">اللاعب الأول</h4>
+                            <p style="margin:5px;">متوسط طاقة الفريق: <strong>${avg1}</strong></p>
+                            <p style="margin:5px;">الميزانية المتبقية: <strong>${b1}M</strong></p>
+                        </div>
+                        <div style="background:#1e1e1e; padding:15px; border-radius:10px; width:45%; border:2px solid ${avg2>=avg1?'#28a745':'#dc3545'};">
+                            <h4 style="margin:0 0 10px 0; color:#ffc107;">اللاعب الثاني</h4>
+                            <p style="margin:5px;">متوسط طاقة الفريق: <strong>${avg2}</strong></p>
+                            <p style="margin:5px;">الميزانية المتبقية: <strong>${b2}M</strong></p>
+                        </div>
+                    </div>
+                    <h2 style="color:#28a745; margin-top:30px;">${winnerText}</h2>
+                `;
+                resultDiv.style.display = 'block';
+            } catch (error) {
+                alert("حدث خطأ أثناء عرض النتائج: " + error.message);
+            }
+        }
+
+        function resetGame() {
+            try {
+                if(!confirm("هل أنت متأكد من تصفير اللعبة وحذف التشكيلات؟")) return;
+                const initialState = {
+                    player1: { budget: 120, team: [] },
+                    player2: { budget: 120, team: [] },
+                    auction: { status: 'waiting' }
+                };
+                
+                gameRef.set(initialState)
+                    .then(() => {
+                        setTimeout(() => {
+                            startNextRound(0); 
+                        }, 500);
+                    }).catch(err => alert("حدث خطأ أثناء التهيئة: " + err.message));
+            } catch (error) {
+                alert("حدث خطأ في وظيفة تصفير اللعبة: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
